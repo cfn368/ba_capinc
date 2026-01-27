@@ -133,7 +133,6 @@ class CapIncModel:
             "mins": {"KC": KC, "KI": KI, "L1C": L1C, "L1I": L1I, "L2C": L2C, "L2I": L2I},
             "w1C": w1C, "w2C": w2C, "w1I": w1I, "w2I": w2I,
             "L1C": L1C, "L1I": L1I, "L2C": L2C, "L2I": L2I,
-
         }
 
     def _static(self, K, q, tau):
@@ -272,7 +271,17 @@ class CapIncModel:
                 )
 
             # 7.6 terminal: force q_T back to SS q (finite-horizon closure)
-            res[T] = q_vec[T] - ss["q"]
+            # 7.6 terminal: force q_T back to SS q (finite-horizon closure)
+            if tau_terminal is None:
+                qT_target = ss["q"]
+            else:
+                ssT = self.solve_steady_state(tau=float(tau_terminal))
+                qT_target = ssT["q"]
+
+            res[T] = q_vec[T] - qT_target
+            return res
+
+            # res[T] = q_vec[T] - ss["q"]
             return res
 
         # 7.7 solve for the q-path
@@ -291,6 +300,3 @@ class CapIncModel:
         sim["success"] = True
         sim["message"] = sol.message
         return sim
-
-
-
