@@ -7,7 +7,7 @@ def plot_figure5(m, T=25, tau_ss=0.0, size=0.01, decay=0.10):
 
         # 2) shock path + transition
         net_t, tau_t, dlog_net = m.net_tax_path(T=T, tau_ss=tau_ss, size=size, decay=decay)
-        sim = m.solve_transition(tau_path=tau_t)
+        sim = m.solve_transition(tau_path=tau_t, tau_terminal=None)
 
         h = np.arange(T + 1)
 

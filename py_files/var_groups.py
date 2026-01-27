@@ -15,6 +15,10 @@ model_var = {
     'L2I':      r'$L_{2I}$',
     'tau':      r'$\tau$',
     'Y':        r'$Y$',
+    'w1C':      r'$w_{1C}$',
+    'w2C':      r'$w_{2C}$',
+    'w1I':      r'$w_{1I}$',
+    'w2I':      r'$w_{2I}$',
 }
 
 def panels(gamma): 

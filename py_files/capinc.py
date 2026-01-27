@@ -146,46 +146,43 @@ class CapIncModel:
 
     # ========== 
     # 5. steady state: solve for (K,q) such that (i) K'=K and (ii) SS Euler holds
-    def solve_steady_state(self, K_guess=1.0, q_guess=1.0):
+    def solve_steady_state(self, K_guess=1.0, q_guess=1.0, tau=0.0):
         r, delta, theta = self.r, self.delta, self.theta
+        tau = float(tau)
 
         def G(x):
-            # 5.1 unknowns in logs => keeps K,q positive
             logK, logq = x
             K, q = np.exp(logK), np.exp(logq)
 
-            # 5.2 reset warm-start so SS solve does not depend on previous path calls
+            # reset warm-start so SS solve does not depend on previous path calls
             z0_old = self.z_last.copy()
             self.z_last[:] = 0.0
-            st = self._static(K, q, tau=0.0)
+            st = self._static(K, q, tau=tau)   # <-- changed
             self.z_last = z0_old
 
-            # 5.3 SS capital stationarity
             I = st["I"]
             K_next = self.next_K(K, I)
 
-            # 5.4 ∂K'/∂K term from accumulation technology
             mpk_term = 1 - delta + theta * (I / K) ** (1 - theta)
 
-            # 5.5 SS Euler / asset pricing for installed capital
-            euler = (1 + r) * q - (st["rC_gross"] + q * mpk_term)
-
+            # SS Euler / asset pricing for installed capital
+            euler = (1 + r) * q - ((1 - tau) * st["rC_gross"] + q * mpk_term)
             return np.array([K_next - K, euler], float)
 
-        # 5.6 solve the 2x2 SS system
         sol = root(G, np.array([np.log(K_guess), np.log(q_guess)], float), method="hybr")
         if not sol.success:
             raise RuntimeError(f"SS solve failed: {sol.message}")
 
         K_ss, q_ss = np.exp(sol.x[0]), np.exp(sol.x[1])
 
-        # 5.7 store SS objects (also resets warm-start for a clean evaluation)
+        # store SS objects (also resets warm-start for a clean evaluation)
         self.z_last[:] = 0.0
-        st = self._static(K_ss, q_ss, tau=0.0)
+        st = self._static(K_ss, q_ss, tau=tau)  # <-- changed
 
         ss = {
             "K": K_ss, "q": q_ss, "pI": st["pI"], "I": st["I"], "C": st["C"],
             "sK": st["sK"], "s1": st["s1"], "s2": st["s2"], "rC_gross": st["rC_gross"],
+            "tau": tau,                          # <-- optional but helpful
         }
         self._ss = ss
         return ss
@@ -239,7 +236,7 @@ class CapIncModel:
                 "L1C": L1C, "L1I": L1I, "L2C": L2C, "L2I": L2I}
 
     # 7. perfect foresight: choose q_path so Euler holds each t plus terminal condition
-    def solve_transition(self, tau_path, K0=None, q_guess_path=None, method="krylov"):
+    def solve_transition(self, tau_path, K0=None, q_guess_path=None, method="krylov", tau_terminal=None):
         # 7.1 ensure we have SS for terminal condition and default guesses
         if self._ss is None:
             self.solve_steady_state()
@@ -271,7 +268,6 @@ class CapIncModel:
                 )
 
             # 7.6 terminal: force q_T back to SS q (finite-horizon closure)
-            # 7.6 terminal: force q_T back to SS q (finite-horizon closure)
             if tau_terminal is None:
                 qT_target = ss["q"]
             else:
@@ -279,8 +275,7 @@ class CapIncModel:
                 qT_target = ssT["q"]
 
             res[T] = q_vec[T] - qT_target
-            return res
-
+        
             # res[T] = q_vec[T] - ss["q"]
             return res
 
