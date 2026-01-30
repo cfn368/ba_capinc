@@ -1,17 +1,29 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def plot_figure5(m, T=25, tau_ss=0.0, size=0.01, decay=0.10):
-        # 1) steady state (your SS is at tau=0 by construction)
+def plot_figure5(m, T=25, tau_ss=0.0, size=0.01, decay=0.10, tau_terminal=None, tail=50):
+        # 1) steady state
         ss = m.solve_steady_state(tau=tau_ss)
 
-        # 2) shock path + transition
-        net_t, tau_t, dlog_net = m.net_tax_path(T=T, tau_ss=tau_ss, size=size, decay=decay)
-        sim = m.solve_transition(tau_path=tau_t, tau_terminal=None)
+        # 2) build a longer shock path, solve on long horizon
+        T_solve = int(T + tail)
+        net_long, tau_long, dlog_net_long = m.net_tax_path(T=T_solve, tau_ss=tau_ss, size=size, decay=decay)
+
+        # IMPORTANT: terminalize to the limit regime, not tau_T
+        tauT = tau_ss if tau_terminal is None else float(tau_terminal)
+
+        sim_long = m.solve_transition(tau_path=tau_long, tau_terminal=tauT)
+
+        # 3) truncate for plotting
+        sl = slice(0, T + 1)
+        sim = {k: (np.asarray(v)[sl] if isinstance(v, (list, np.ndarray)) and len(v) == T_solve + 1 else v)
+                for k, v in sim_long.items()}
+
+        dlog_net = dlog_net_long[sl]  # if you use it in welfare
 
         h = np.arange(T + 1)
 
-        # 3) percent deviations (panel a)
+        # 4) percent deviations
         pct = lambda x, xss: 100 * np.log(np.asarray(x) / float(xss))
         dq  = pct(sim["q"],  ss["q"])
         dpI = pct(sim["pI"], ss["pI"])
@@ -27,7 +39,7 @@ def plot_figure5(m, T=25, tau_ss=0.0, size=0.01, decay=0.10):
         WB_C_2 = st_ss["w2C"] * st_ss["L2C"]
         WB_I_1 = st_ss["w1I"] * st_ss["L1I"]
         WB_I_2 = st_ss["w2I"] * st_ss["L2I"]
-
+        
         # after-tax capital income at SS (capital income = rC_gross * K)
         D_ss = (1 - tau_ss) * st_ss["rC_gross"] * ss["K"]
 

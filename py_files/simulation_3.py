@@ -1,48 +1,55 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from io import StringIO
+import requests
+import pandas as pd
 
-def net_tax_path_ar1(T=25, tau0=0.32, tauT=0.22, rho=0.7, T_reform=25):
-    T = int(T)
-    T_reform = int(T_reform)
-    if T_reform < 1 or T_reform > T:
-        raise ValueError("Need 1 <= T_reform <= T.")
 
-    t = np.arange(T + 1)
 
-    net0 = 1.0 - tau0
-    netT = 1.0 - tauT
-
-    # AR(1) convergence for t<=T_reform
-    net_path = netT + (rho ** t) * (net0 - netT)
-
-    # clamp after T_reform (so extra years are steady)
-    net_t = net_path.copy()
-    net_t[T_reform + 1:] = net_path[T_reform]
-
-    tau_t = 1.0 - net_t
-    dlog  = np.log(net_t / net0)
-    return net_t, tau_t, dlog
-
-def plot_figure5_reform(m, T=25, tau_ss=0.32, tauT=0.22, rho=0.7, ref=False, tail=50):
+def plot_figure5_emp(m, T=25, tau_ss=0.32, tauT=0.22, rho=0.7, ref=False, tail=50):
     # 1) steady state at initial tax (baseline you deviate from)
     ss = m.solve_steady_state(tau=tau_ss)
 
     # 2) build longer path, solve on longer horizon
     T_solve = int(T + tail)
-    net_long, tau_long, dlog_long = net_tax_path_ar1(
-        T=T_solve, tau0=tau_ss, tauT=tauT, rho=rho, T_reform=25
+    url = (
+        "https://sdmx.oecd.org/public/rest/data/"
+        "OECD.CTP.TPS,DSD_TAX_CIT@DF_CIT,1.0/"
+        "DNK.A..ST..S13+S1311+S13M.."
+        "?startPeriod=2000&endPeriod=2025"
+        "&dimensionAtObservation=AllDimensions"
+        "&format=csvfilewithlabels"
     )
 
+    r = requests.get(url)
+
+    r.raise_for_status()
+    df = pd.read_csv(StringIO(r.text))
+
+    # keep only the statutory CIT rate
+    df_cit = (df.loc[df["MEASURE"] == "CIT", ["TIME_PERIOD", "OBS_VALUE"]]
+                .rename(columns={"TIME_PERIOD": "year", "OBS_VALUE": "cit_rate"})
+                .assign(year=lambda x: x["year"].astype(int))
+                .sort_values("year")
+                .reset_index(drop=True))
+
+    cit_pct = df_cit["cit_rate"].to_numpy(dtype=float) 
+    tau_raw = cit_pct / 100.0 
+    tau_t = np.concatenate([tau_raw, np.full(tail, tau_raw[-1])])
+    net_t = 1.0 - tau_t
+    net0 = net_t[0]
+    dlog = np.log(net_t / net0)
+
     # terminal closure at tauT
-    sim_long = m.solve_transition(tau_path=tau_long, tau_terminal=tauT)
+    sim_long = m.solve_transition(tau_path=tau_t, tau_terminal=tauT)
 
     # 3) truncate for plotting (and welfare calculations)
     sl = slice(0, T + 1)
     sim = {k: (np.asarray(v)[sl] if isinstance(v, (list, np.ndarray)) and len(v) == T_solve + 1 else v)
            for k, v in sim_long.items()}
-    dlog_net = np.asarray(dlog_long)[sl]
-    net_t = np.asarray(net_long)[sl]
-    tau_t = np.asarray(tau_long)[sl]
+    dlog_net = np.asarray(dlog)[sl]
+    # net_t = np.asarray(net_long)[sl]
+    tau_t = np.asarray(tau_t)[sl]
 
     h = np.arange(T + 1)
 
@@ -99,7 +106,7 @@ def plot_figure5_reform(m, T=25, tau_ss=0.32, tauT=0.22, rho=0.7, ref=False, tai
     ax2.legend(frameon=True)
     ax2.grid(True, which="both", linestyle="--", alpha=0.5)
 
-    return fig, (ax1, ax2), ss, sim, {"tau_t": tau_t, "net_t": net_t, "dlog_net": dlog_net}
+    return fig, (ax1, ax2), ss, sim, {"tau_t": tau_t, "dlog_net": dlog_net}
 
 def labour_share(m, sim, gamma=1):
     # 1) value added in consumption units

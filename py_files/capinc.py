@@ -236,62 +236,126 @@ class CapIncModel:
                 "L1C": L1C, "L1I": L1I, "L2C": L2C, "L2I": L2I}
 
     # 7. perfect foresight: choose q_path so Euler holds each t plus terminal condition
+    # OLD VERSION
+    # def solve_transition(self, tau_path, K0=None, q_guess_path=None, method="krylov", tau_terminal=None):
+    #     # 7.1 ensure we have SS for terminal condition and default guesses
+    #     if self._ss is None:
+    #         self.solve_steady_state()
+
+    #     ss = self._ss
+    #     T = len(tau_path) - 1
+
+    #     # 7.2 default initial capital = SS capital
+    #     if K0 is None:
+    #         K0 = ss["K"]
+
+    #     # 7.3 default initial guess for q-path = flat at SS q
+    #     if q_guess_path is None:
+    #         q_guess_path = ss["q"] * np.ones(T + 1)
+
+    #     # terminal policy (if not provided, just hold last tau fixed)
+    #     if tau_terminal is None:
+    #         tauTplus = float(tau_path[-1])
+    #     else:
+    #         tauTplus = float(tau_terminal)
+    #     ssT = self.solve_steady_state(tau=tauTplus)
+    #     q_terminal = ssT["q"]
+
+    #     def R(q_vec):
+    #         # 7.4 for a candidate q-path, simulate quantities and build Euler residuals
+    #         q_vec = np.asarray(q_vec, float)
+    #         sim = self._path_given_q(q_vec, K0, tau_path)
+    #         K, I, rC = sim["K"], sim["I"], sim["rC_gross"]
+
+    #         res = np.empty(T + 1)
+
+    #         # 7.5 Euler / arbitrage for t=0..T-1 (tax hits next period payoff)
+    #         for t in range(T):
+    #             mpk_term_next = 1 - self.delta + self.theta * (I[t + 1] / K[t + 1]) ** (1 - self.theta)
+    #             res[t] = (1 + self.r) * q_vec[t] - (
+    #                 (1 - tau_path[t + 1]) * rC[t + 1] + q_vec[t + 1] * mpk_term_next
+    #             )
+
+    #         # 7.6 terminal: force q_T back to SS q (finite-horizon closure)
+    #         if tau_terminal is None:
+    #             qT_target = ss["q"]
+    #         else:
+    #             ssT = self.solve_steady_state(tau=float(tau_terminal))
+    #             qT_target = ssT["q"]
+
+    #         res[T] = q_vec[T] - qT_target
+        
+    #         # res[T] = q_vec[T] - ss["q"]
+    #         return res
+
+    #     # 7.7 solve for the q-path
+    #     sol = root(R, np.asarray(q_guess_path, float), method=method)
+
+    #     # 7.8 fallback if krylov fails
+    #     if not sol.success:
+    #         sol2 = root(R, np.asarray(q_guess_path, float), method="hybr")
+    #         if not sol2.success:
+    #             raise RuntimeError(f"Transition solve failed: {sol.message} | fallback: {sol2.message}")
+    #         sol = sol2
+
+    #     # 7.9 return the implied path at the solution q-path
+    #     sim = self._path_given_q(sol.x, K0, tau_path)
+    #     sim["tau"] = np.asarray(tau_path, float)
+    #     sim["success"] = True
+    #     sim["message"] = sol.message
+    #     return sim
+
     def solve_transition(self, tau_path, K0=None, q_guess_path=None, method="krylov", tau_terminal=None):
-        # 7.1 ensure we have SS for terminal condition and default guesses
+        # ensure SS
         if self._ss is None:
             self.solve_steady_state()
-
         ss = self._ss
-        T = len(tau_path) - 1
 
-        # 7.2 default initial capital = SS capital
+        T = len(tau_path) - 1
         if K0 is None:
             K0 = ss["K"]
-
-        # 7.3 default initial guess for q-path = flat at SS q
         if q_guess_path is None:
             q_guess_path = ss["q"] * np.ones(T + 1)
 
+        # terminal policy (if not provided, just hold last tau fixed)
+        if tau_terminal is None:
+            tauTplus = float(tau_path[-1])
+        else:
+            tauTplus = float(tau_terminal)
+
+        # terminal continuation value q_{T+1}
+        ssT = self.solve_steady_state(tau=tauTplus)  # uses your existing SS solver
+        q_terminal = ssT["q"]
+
         def R(q_vec):
-            # 7.4 for a candidate q-path, simulate quantities and build Euler residuals
-            q_vec = np.asarray(q_vec, float)
-            sim = self._path_given_q(q_vec, K0, tau_path)
+            q_vec = np.asarray(q_vec, float)          # unknowns: q_0,...,q_T  (length T+1)
+
+            # extend paths by one extra terminal period
+            q_ext   = np.concatenate([q_vec,  [q_terminal]])         # length T+2
+            tau_ext = np.concatenate([tau_path, [tauTplus]])         # length T+2
+
+            sim = self._path_given_q(q_ext, K0, tau_ext)
             K, I, rC = sim["K"], sim["I"], sim["rC_gross"]
 
             res = np.empty(T + 1)
 
-            # 7.5 Euler / arbitrage for t=0..T-1 (tax hits next period payoff)
-            for t in range(T):
+            # impose Euler for t=0,...,T  (note the last one uses q_{T+1}=q_terminal)
+            for t in range(T + 1):
                 mpk_term_next = 1 - self.delta + self.theta * (I[t + 1] / K[t + 1]) ** (1 - self.theta)
-                res[t] = (1 + self.r) * q_vec[t] - (
-                    (1 - tau_path[t + 1]) * rC[t + 1] + q_vec[t + 1] * mpk_term_next
+                res[t] = (1 + self.r) * q_ext[t] - (
+                    (1 - tau_ext[t + 1]) * rC[t + 1] + q_ext[t + 1] * mpk_term_next
                 )
 
-            # 7.6 terminal: force q_T back to SS q (finite-horizon closure)
-            if tau_terminal is None:
-                qT_target = ss["q"]
-            else:
-                ssT = self.solve_steady_state(tau=float(tau_terminal))
-                qT_target = ssT["q"]
-
-            res[T] = q_vec[T] - qT_target
-        
-            # res[T] = q_vec[T] - ss["q"]
             return res
 
-        # 7.7 solve for the q-path
         sol = root(R, np.asarray(q_guess_path, float), method=method)
-
-        # 7.8 fallback if krylov fails
         if not sol.success:
-            sol2 = root(R, np.asarray(q_guess_path, float), method="hybr")
-            if not sol2.success:
-                raise RuntimeError(f"Transition solve failed: {sol.message} | fallback: {sol2.message}")
-            sol = sol2
+            raise RuntimeError(f"Transition solve failed: {sol.message}")
 
-        # 7.9 return the implied path at the solution q-path
-        sim = self._path_given_q(sol.x, K0, tau_path)
+        q_path = np.asarray(sol.x if hasattr(sol, "x") else q_guess_path, float)
+        sim = self._path_given_q(q_path, K0, tau_path)
+
         sim["tau"] = np.asarray(tau_path, float)
-        sim["success"] = True
-        sim["message"] = sol.message
+        sim["success"] = bool(getattr(sol, "success", False))
+        sim["message"] = str(getattr(sol, "message", "no message"))
         return sim
