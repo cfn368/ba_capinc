@@ -1,4 +1,5 @@
 from scipy.optimize import root
+from scipy.optimize import least_squares
 import numpy as np
 
 
@@ -25,41 +26,21 @@ class CapIncModel:
         self.z_last     = np.array([0.0, 0.0, 0.0, 0.0])
         self._ss        = None
 
-    # ========== 
-    # 2. shock path: shock is to log(1-τ_t) 
-    def shock_dlog_net_tax(self, T=25, size=0.01, decay=0.10):
-        # 2.1 dlog(1-τ_t) = size*(1-decay)^t
-        t = np.arange(T + 1)
-        return size * (1 - decay) ** t
-
-    def net_tax_path(self, T=25, tau_ss=0.0, size=0.01, decay=0.10):
-        # 2.2 build (1-τ_t) from steady state net-of-tax, then back out τ_t
-        dlog = self.shock_dlog_net_tax(T=T, size=size, decay=decay)
-        net_ss = 1.0 - tau_ss
-        net_t  = net_ss * np.exp(dlog)
-        tau_t  = 1.0 - net_t
-        return net_t, tau_t, dlog
-
-    # ========== 
-    # 3. primitives used throughout
-    def investment(self, K, q, pI):
-        # 3.1 target I implied by the q vs pI condition: I/K = (1-θ)^(1/θ) (q/pI)^(1/θ)
-        return K * (1 - self.theta) ** (1 / self.theta) * (q / pI) ** (1 / self.theta)
-
+    # ========== ========== ========== ========== ==========
+    # 2. capital accumulation
     def next_K(self, K, I):
         # 3.2 capital accumulation: K'=(1-δ)K + K^θ I^(1-θ)
         return (1 - self.delta) * K + (K ** self.theta) * (I ** (1 - self.theta))
 
-
-    # ========== 
-    # 4. static block: solve (sK,s1,s2,pI) given (K,q,τ)
+    # ========== ========== ========== ========== ==========
+    # 3. static block: solve (sK,s1,s2,pI) given (K,q,τ)
     def static_block_sigmoid(self, K, q, tau, z0=(0.0, 0.0, 0.0, 0.0)):
 
-        # 4.1 map unconstrained z to shares in (0,1)
+        # 3.1 map unconstrained z to shares in (0,1)
         def sigmoid(z):
             return 1.0 / (1.0 + np.exp(-z))
 
-        # 4.2 parameters (local names = shorter formulas)
+        # 3.2 parameters (local names = shorter formulas)
         L1, L2 = self.L1, self.L2
         aK, a1, a2 = self.alphaK, self.alpha1L, self.alpha2L
         bK, b1, b2 = self.betaK, self.beta1L, self.beta2L
@@ -67,45 +48,45 @@ class CapIncModel:
         theta = self.theta
 
         def F(z):
-            # 4.3 unknowns: shares + log price (pI>0)
+            # 3.3 unknowns: shares + log price (pI>0)
             zK, z1, z2, u = z
             sK = sigmoid(zK); s1 = sigmoid(z1); s2 = sigmoid(z2)
             pI = np.exp(u)
 
-            # 4.4 sectoral allocations implied by shares
+            # 3.4 sectoral allocations implied by shares
             KC, KI   = (1 - sK) * K,  sK * K
             L1C, L1I = (1 - s1) * L1, s1 * L1
             L2C, L2I = (1 - s2) * L2, s2 * L2
 
-            # 4.5 outputs (C-sector numeraire; I-sector value uses pI)
+            # 3.5 outputs (C-sector numeraire; I-sector value uses pI)
             C = (KC**aK) * (L1C**a1) * (L2C**a2)
             I = (KI**bK) * (L1I**b1) * (L2I**b2)
 
-            # 4.6 marginal products / factor prices by Cobb–Douglas
+            # 3.6 marginal products / factor prices by Cobb–Douglas
             w1C = a1 * C / L1C
             w2C = a2 * C / L2C
             w1I = b1 * pI * I / L1I
             w2I = b2 * pI * I / L2I
 
-            rC = aK * C / KC
-            rI = bK * pI * I / KI
+            rC = aK * C / KC        * (1-tau)
+            rI = bK * pI * I / KI   * (1-tau)
 
-            # 4.7 equilibrium conditions
+            # 3.7 equilibrium conditions
             eq1 = rC - rI
             eq2 = (L1C / L1I) - ((1 - mu1) / mu1) * (w1C / w1I) ** phi1
             eq3 = (L2C / L2I) - ((1 - mu2) / mu2) * (w2C / w2I) ** phi2
 
-            # 4.8 pin down pI via the I/K target implied by (q,pI,θ)
+            # 3.8 pin down pI via the I/K target implied by (q,pI,θ)
             target_I_over_K = (1 - theta) ** (1 / theta) * (q / pI) ** (1 / theta)
             eq4 = (I / K) - target_I_over_K
 
             return np.array([eq1, eq2, eq3, eq4], float)
 
-        # 4.9 solve static system (warm-start with z0)
+        # 3.9 solve static system (warm-start with z0)
         sol = root(F, np.array(z0, float), method="hybr")
         res = F(sol.x)
 
-        # 4.10 decode solution and recompute objects cleanly
+        # 3.10 decode solution and recompute objects cleanly
         zK, z1, z2, u = sol.x
         sK, s1, s2 = sigmoid(zK), sigmoid(z1), sigmoid(z2)
         pI = float(np.exp(u))
@@ -120,7 +101,7 @@ class CapIncModel:
         w1I = b1 * pI * I / L1I
         w2I = b2 * pI * I / L2I
 
-        # 4.11 gross MPK in C-sector (before tax); tax enters only in Euler later
+        # 3.11 gross MPK in C-sector (before tax); tax enters only in Euler later
         rC_gross = aK * C / KC
 
         return {
@@ -135,16 +116,18 @@ class CapIncModel:
             "L1C": L1C, "L1I": L1I, "L2C": L2C, "L2I": L2I,
         }
 
+    # 4.12 thin wrapper: (i) warm-start with last z, (ii) fail fast if solver fails
     def _static(self, K, q, tau):
-        # 4.12 thin wrapper: (i) warm-start with last z, (ii) fail fast if solver fails
+        
         out = self.static_block_sigmoid(K, q, tau, z0=self.z_last)
+
         if not out["success"]:
             raise RuntimeError(f"Static block failed: {out['message']}")
         self.z_last = out["z_sol"].copy()
         return out
 
 
-    # ========== 
+    # ========== ========== ========== ========== ==========
     # 5. steady state: solve for (K,q) such that (i) K'=K and (ii) SS Euler holds
     def solve_steady_state(self, K_guess=1.0, q_guess=1.0, tau=0.0):
         r, delta, theta = self.r, self.delta, self.theta
@@ -188,7 +171,7 @@ class CapIncModel:
         return ss
 
 
-    # ========== 
+    # ========== ========== ========== ========== ========== 
     # 6. given a candidate q-path, simulate (K,I,C,pI,rC,shares) forward
     def _path_given_q(self, q_path, K0, tau_path):
         # 6.1 allocate arrays for the implied path
@@ -235,76 +218,9 @@ class CapIncModel:
                 "w1C": w1C, "w2C": w2C, "w1I": w1I, "w2I": w2I,
                 "L1C": L1C, "L1I": L1I, "L2C": L2C, "L2I": L2I}
 
+
+    # ========== ========== ========== ========== ==========
     # 7. perfect foresight: choose q_path so Euler holds each t plus terminal condition
-    # OLD VERSION
-    # def solve_transition(self, tau_path, K0=None, q_guess_path=None, method="krylov", tau_terminal=None):
-    #     # 7.1 ensure we have SS for terminal condition and default guesses
-    #     if self._ss is None:
-    #         self.solve_steady_state()
-
-    #     ss = self._ss
-    #     T = len(tau_path) - 1
-
-    #     # 7.2 default initial capital = SS capital
-    #     if K0 is None:
-    #         K0 = ss["K"]
-
-    #     # 7.3 default initial guess for q-path = flat at SS q
-    #     if q_guess_path is None:
-    #         q_guess_path = ss["q"] * np.ones(T + 1)
-
-    #     # terminal policy (if not provided, just hold last tau fixed)
-    #     if tau_terminal is None:
-    #         tauTplus = float(tau_path[-1])
-    #     else:
-    #         tauTplus = float(tau_terminal)
-    #     ssT = self.solve_steady_state(tau=tauTplus)
-    #     q_terminal = ssT["q"]
-
-    #     def R(q_vec):
-    #         # 7.4 for a candidate q-path, simulate quantities and build Euler residuals
-    #         q_vec = np.asarray(q_vec, float)
-    #         sim = self._path_given_q(q_vec, K0, tau_path)
-    #         K, I, rC = sim["K"], sim["I"], sim["rC_gross"]
-
-    #         res = np.empty(T + 1)
-
-    #         # 7.5 Euler / arbitrage for t=0..T-1 (tax hits next period payoff)
-    #         for t in range(T):
-    #             mpk_term_next = 1 - self.delta + self.theta * (I[t + 1] / K[t + 1]) ** (1 - self.theta)
-    #             res[t] = (1 + self.r) * q_vec[t] - (
-    #                 (1 - tau_path[t + 1]) * rC[t + 1] + q_vec[t + 1] * mpk_term_next
-    #             )
-
-    #         # 7.6 terminal: force q_T back to SS q (finite-horizon closure)
-    #         if tau_terminal is None:
-    #             qT_target = ss["q"]
-    #         else:
-    #             ssT = self.solve_steady_state(tau=float(tau_terminal))
-    #             qT_target = ssT["q"]
-
-    #         res[T] = q_vec[T] - qT_target
-        
-    #         # res[T] = q_vec[T] - ss["q"]
-    #         return res
-
-    #     # 7.7 solve for the q-path
-    #     sol = root(R, np.asarray(q_guess_path, float), method=method)
-
-    #     # 7.8 fallback if krylov fails
-    #     if not sol.success:
-    #         sol2 = root(R, np.asarray(q_guess_path, float), method="hybr")
-    #         if not sol2.success:
-    #             raise RuntimeError(f"Transition solve failed: {sol.message} | fallback: {sol2.message}")
-    #         sol = sol2
-
-    #     # 7.9 return the implied path at the solution q-path
-    #     sim = self._path_given_q(sol.x, K0, tau_path)
-    #     sim["tau"] = np.asarray(tau_path, float)
-    #     sim["success"] = True
-    #     sim["message"] = sol.message
-    #     return sim
-
     def solve_transition(self, tau_path, K0=None, q_guess_path=None, method="krylov", tau_terminal=None):
         # ensure SS
         if self._ss is None:

@@ -1,65 +1,77 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def plot_figure5(m, T=25, tau_ss=0.0, size=0.01, decay=0.10, tau_terminal=None, tail=50):
-        # 1) steady state
+###########################################################
+# 1. paper like wealth effects
+###########################################################
+
+def welfare_effects(m, sim_raw, tau_long, dlog_net_long, 
+                    T=25, tail=50, tau_ss=None,
+                    ):
+
+        # 1. plot only slice of full simulation timeline
         ss = m.solve_steady_state(tau=tau_ss)
 
-        # 2) build a longer shock path, solve on long horizon
-        T_solve = int(T + tail)
-        net_long, tau_long, dlog_net_long = m.net_tax_path(T=T_solve, tau_ss=tau_ss, size=size, decay=decay)
-
-        # IMPORTANT: terminalize to the limit regime, not tau_T
-        tauT = tau_ss if tau_terminal is None else float(tau_terminal)
-
-        sim_long = m.solve_transition(tau_path=tau_long, tau_terminal=tauT)
-
-        # 3) truncate for plotting
         sl = slice(0, T + 1)
+        T_solve = int(T + tail)
         sim = {k: (np.asarray(v)[sl] if isinstance(v, (list, np.ndarray)) and len(v) == T_solve + 1 else v)
-                for k, v in sim_long.items()}
-
-        dlog_net = dlog_net_long[sl]  # if you use it in welfare
-
+                for k, v in sim_raw.items()}
+        
+        # 2. get relevant
+        dlog_net = dlog_net_long[sl]
         h = np.arange(T + 1)
 
-        # 4) percent deviations
+        # 3. left panel: percent deviations
         pct = lambda x, xss: 100 * np.log(np.asarray(x) / float(xss))
-        dq  = pct(sim["q"],  ss["q"])
-        dpI = pct(sim["pI"], ss["pI"])
-        dK  = pct(sim["K"],  ss["K"])
+        dq  = pct(sim["q"],  ss["q"])   # relative price of capital good
+        dpI = pct(sim["pI"], ss["pI"])  # investment price
+        dK  = pct(sim["K"],  ss["K"])   # capital stock
 
-        # 4) “undiscounted welfare effects” (panel b), normalized by C_ss
-        #    weights: steady-state wage bills by sector+type, and steady-state after-tax capital income
+        # 4. right panel: undiscounted welfare effects
+        # ... normalised by C_ss
         m.z_last[:] = 0.0
         st_ss = m._static(ss["K"], ss["q"], tau=tau_ss)
 
-        # wage-bill weights (held at SS; matches the envelope-style decomposition)
+        # 4.1 wage bill
         WB_C_1 = st_ss["w1C"] * st_ss["L1C"]
         WB_C_2 = st_ss["w2C"] * st_ss["L2C"]
         WB_I_1 = st_ss["w1I"] * st_ss["L1I"]
         WB_I_2 = st_ss["w2I"] * st_ss["L2I"]
-        
-        # after-tax capital income at SS (capital income = rC_gross * K)
-        D_ss = (1 - tau_ss) * st_ss["rC_gross"] * ss["K"]
 
-        # integrands (in consumption units), then scale by C_ss and convert to %
+        # 4.2 after-tax capital income at SS
+        # D_ss = (1 - tau_ss) * st_ss["rC_gross"] * ss["K"] 
+
+        # 4.3 compute welfare gains
         wg_C = (WB_C_1 * np.log(sim["w1C"] / st_ss["w1C"]) +
                 WB_C_2 * np.log(sim["w2C"] / st_ss["w2C"]))
         wg_I = (WB_I_1 * np.log(sim["w1I"] / st_ss["w1I"]) +
                 WB_I_2 * np.log(sim["w2I"] / st_ss["w2I"]))
-        wg_K = D_ss * dlog_net
+        # wg_K = D_ss * dlog_net # old
 
+        # 4.4 alternative wg_K, here as last claimant
+        # 4.4.1 make sure these are (T+1,)
+        Y_ss = ss["C"] + ss["pI"] * ss["I"]
+        WB_ss = WB_C_1 + WB_C_2 + WB_I_1 + WB_I_2
+        D_ss  = (1 - tau_ss) * (Y_ss - WB_ss)
+
+        wg_L_path = np.asarray(wg_C, float) + np.asarray(wg_I, float) 
+        WG_total_path = D_ss * dlog_net 
+
+        # 4.4.2. residual claimant
+        wg_K = WG_total_path - wg_L_path          
+
+
+
+        # 4.5 ... in ss consumption units
         C_ss = ss["C"]
         wC_pct = 100 * wg_C / C_ss
         wI_pct = 100 * wg_I / C_ss
-        wK_pct = 100 * wg_K / C_ss
+        wK_pct = 100 * wg_K / C_ss 
 
-        # 5) plot
+        # 5. plot
         fig, (ax1, ax2) = plt.subplots(1, 2, 
-                                       figsize=(12, 6), 
-                                       constrained_layout=True,
-                                        sharey=True
+                                        figsize=(12, 6), 
+                                        constrained_layout=True,
         )
 
         # (a) Capital and valuations
@@ -86,6 +98,9 @@ def plot_figure5(m, T=25, tau_ss=0.0, size=0.01, decay=0.10, tau_terminal=None, 
 
         return fig, (ax1, ax2), ss, sim
 
+###########################################################
+# 2. labour income share
+###########################################################
 
 def labour_share(m, sim, gamma=1):
     # 1) value added in consumption units

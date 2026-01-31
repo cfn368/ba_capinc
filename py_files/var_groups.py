@@ -23,11 +23,11 @@ model_var = {
 
 def panels(gamma): 
     return [
-    ("Y", r"$Y$"),
-    ("C", r"$C$"),
-    ('pII', r"$p_II$"),
-    ("wC", r"$w_C$"),
-    ("wI", r"$w_I$"),
+    # ("Y", r"$Y$"),
+    # ("C", r"$C$"),
+    # ('pII', r"$p_II$"),
+    # ("wC", r"$w_C$"),
+    # ("wI", r"$w_I$"),
     ("LS_C", r"$LS_C$"),
     ("LS_I", r"$LS_I$"),
     ("LS", r"$LS$"),
