@@ -39,26 +39,26 @@ def welfare_effects(m, sim_raw, tau_long, dlog_net_long,
         WB_I_2 = st_ss["w2I"] * st_ss["L2I"]
 
         # 4.2 after-tax capital income at SS
-        # D_ss = (1 - tau_ss) * st_ss["rC_gross"] * ss["K"] 
+        D_ss = (1 - tau_ss) * st_ss["rC_gross"] * ss["K"] 
 
         # 4.3 compute welfare gains
         wg_C = (WB_C_1 * np.log(sim["w1C"] / st_ss["w1C"]) +
                 WB_C_2 * np.log(sim["w2C"] / st_ss["w2C"]))
         wg_I = (WB_I_1 * np.log(sim["w1I"] / st_ss["w1I"]) +
                 WB_I_2 * np.log(sim["w2I"] / st_ss["w2I"]))
-        # wg_K = D_ss * dlog_net # old
+        wg_K = D_ss * dlog_net # old
 
         # 4.4 alternative wg_K, here as last claimant
         # 4.4.1 make sure these are (T+1,)
-        Y_ss = ss["C"] + ss["pI"] * ss["I"]
-        WB_ss = WB_C_1 + WB_C_2 + WB_I_1 + WB_I_2
-        D_ss  = (1 - tau_ss) * (Y_ss - WB_ss)
+        # Y_ss = ss["C"] + ss["pI"] * ss["I"]
+        # WB_ss = WB_C_1 + WB_C_2 + WB_I_1 + WB_I_2
+        # D_ss  = (1 - tau_ss) * (Y_ss - WB_ss)
 
-        wg_L_path = np.asarray(wg_C, float) + np.asarray(wg_I, float) 
-        WG_total_path = D_ss * dlog_net 
+        # wg_L_path = np.asarray(wg_C, float) + np.asarray(wg_I, float) 
+        # WG_total_path = D_ss * dlog_net 
 
-        # 4.4.2. residual claimant
-        wg_K = WG_total_path - wg_L_path          
+        # # 4.4.2. residual claimant
+        # wg_K = WG_total_path - wg_L_path          
 
 
 

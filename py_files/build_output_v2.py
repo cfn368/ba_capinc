@@ -70,7 +70,7 @@ def welfare_effects(m, sim_raw, tau_long, dlog_net_long,
         # workers total welfare-flow path
         wg_L_path = np.asarray(wg_C, float) + np.asarray(wg_I, float)
 
-        # total welfare-flow path (paper step: D_t * dlog(1-τ_t))
+        # total welfare-flow path
         WG_total_path = D_t * np.asarray(dlog_net, float)
 
         # residual claimant
@@ -80,15 +80,17 @@ def welfare_effects(m, sim_raw, tau_long, dlog_net_long,
         wC_pct = 100 * wg_C / ss["C"]
         wI_pct = 100 * wg_I / ss["C"]
         wK_pct = 100 * wg_K / ss["C"]
+        WG_pct = 100 * WG_total_path / ss['C']
 
         # 4.6 append solution dict
         sim["dq_pct"]  = np.asarray(dq, float)
         sim["dpI_pct"] = np.asarray(dpI, float)
         sim["dK_pct"]  = np.asarray(dK, float)
 
-        sim["wC_pct"]  = np.asarray(wC_pct, float)
-        sim["wI_pct"]  = np.asarray(wI_pct, float)
-        sim["wK_pct"]  = np.asarray(wK_pct, float)
+        sim["wg_C"]  = np.asarray(wg_C, float)
+        sim["wg_I"]  = np.asarray(wg_I, float)
+        sim["wg_K"]  = np.asarray(wg_K, float)
+        sim["WG_total_path"]  = np.asarray(WG_total_path, float)
 
         # 5. plot
         fig, (ax1, ax2) = plt.subplots(1, 2, 
@@ -111,6 +113,7 @@ def welfare_effects(m, sim_raw, tau_long, dlog_net_long,
         ax2.plot(h, wC_pct, lw=2, label="consumption sector workers", color="k")
         ax2.plot(h, wI_pct, lw=2, label="investment sector workers",  color='#00B8D9')
         ax2.plot(h, wK_pct, lw=2, label="capitalists",                color='crimson')
+        ax2.plot(h, WG_pct, lw=2, label="Total wealth gain", color='gray', ls=':')
         ax2.axhline(0, color="k", ls=":", lw=1, alpha=0.6)
         ax2.set_xlabel("horizon")
         ax2.set_ylabel("welfare gain / consumption (%)")
@@ -146,3 +149,123 @@ def labour_share(m, sim, gamma=1):
             'LS_gamma': LS_gamma, 'pII': pI * I,
             'C': C,
         }
+
+###########################################################
+# 2. incidence and elasticities
+###########################################################
+
+def inc_elas(m, sim, tau):
+
+        # ========== ========== ========== ========== ========== 
+        # 1. tax incidence
+        consump_w = sim['wg_C'].sum() / sim['WG_total_path'].sum()
+        investm_w = sim['wg_I'].sum() / sim['WG_total_path'].sum()
+        capital_o = sim['wg_K'].sum() / sim['WG_total_path'].sum()
+
+        print("\n" + "="*44)
+        print("-"*44)
+        print(" Incidence (share of total welfare gain) ")
+        print("-"*44)
+        print(f"{'Consumption workers':<22} {consump_w:>6.1%}")
+        print(f"{'Investment workers':<22} {investm_w:>6.1%}")
+        print(f"{'Capitalists':<22} {capital_o:>6.1%}")
+
+        # ========== ========== ========== ========== ========== 
+        # 2. elasticities (q,K) 
+        ss = m.solve_steady_state(tau=tau)
+        vals = m.static_block_sigmoid(K=ss['K'], q=ss['q'], tau=ss['tau'])
+
+        A_theta = np.array([
+        [ 
+                vals['sK']/(1-vals['sK']) * (m.alphaK-1) + (m.betaK-1)  ,
+                vals['s1']/(1-vals['s1']) * m.alpha1L + m.beta1L        ,
+                vals['s2']/(1-vals['s2']) * m.alpha2L + m.beta2L        ,
+                1.0
+        ]   ,
+        [
+                vals['sK']/(1-vals['sK']) * m.alphaK + m.betaK          ,
+                vals['s1']/(1-vals['s1']) * (m.alpha1L-(1-m.phi1)/m.phi1)
+                + m.beta1L - (1-m.phi1)/m.phi1                          ,
+                vals['s2']/(1-vals['s2']) * m.alpha2L + m.beta2L        ,
+                1.0
+        ]   ,
+        [
+                vals['sK']/(1-vals['sK']) * m.alphaK + m.betaK          ,
+                vals['s1']/(1-vals['s1']) * m.alpha1L + m.beta1L        ,
+                vals['s2']/(1-vals['s2']) * (m.alpha2L-(1-m.phi2)/m.phi2)
+                + m.beta2L - (1-m.phi2)/m.phi2                          ,
+                1.0
+        ]   ,
+        [
+                m.theta*m.betaK, m.theta*m.beta1L, m.theta*m.beta2L, 1.0
+        ]
+        ])
+
+        A0 = A_theta.copy()
+        A0[3, :] = np.array([0.0, 0.0, 0.0, 1.0])
+
+        b = np.array([0.0, 0.0, 0.0, 1.0])
+
+        x_theta = np.linalg.solve(A_theta, b)
+        x0      = np.linalg.solve(A0, b)
+
+        supply_vec = np.array([ m.betaK, m.beta1L, m.beta2L, 0.0 ])
+        demand_vec = np.array([
+        vals['sK']/(1-vals['sK'])                                   , 
+        -m.alpha1L/(1-m.alphaK) * vals['s1']/(1-vals['s1'])         ,
+        -m.alpha2L/(1-m.alphaK) * vals['s2']/(1-vals['s2'])         ,
+        0.0
+        ])
+
+        epsS_LR = supply_vec @ x0
+        epsS_SR = m.delta * (1 - m.theta) * (supply_vec @ x_theta)
+        epsD    = - (-1/(1-m.alphaK) + demand_vec @ x0)
+
+        print("\n" + "-"*44)
+        print(" Elasticities ")
+        print("-"*44)
+        print(f"{'epsS_LR':<10} {epsS_LR:>8.2f}")
+        print(f"{'epsS_SR':<10} {epsS_SR:>8.2f}")
+        print(f"{'epsD':<10} {epsD:>8.2f}")
+
+        # ========== ========== ========== ========== ========== 
+        # tax elasticities
+        price_elas  =  1 / (1-m.alphaK) * 1 / (epsS_LR + epsD)
+        quant_elas  =  1 / (1-m.alphaK) * epsS_LR / (epsS_LR + epsD)
+        wealth_elas = price_elas + quant_elas
+
+        print("\n" + "-"*44)
+        print(" Tax elasticities (LR GE) ")
+        print("-"*44)
+        print(f"{'price_elas':<10} {price_elas:>8.2f}")
+        print(f"{'quant_elas':<10} {quant_elas:>8.2f}")
+        print(f"{'wealth_ela':<10} {wealth_elas:>8.2f}")
+        print("="*44 + "\n")
+
+        # return central objects
+        return {
+            # incidence shares
+            "consump_share": consump_w,
+            "invest_share":  investm_w,
+            "capital_share": capital_o,
+
+            # key elasticities
+            "epsS_LR": epsS_LR,
+            "epsS_SR": epsS_SR,
+            "epsD":    epsD,
+
+            # GE tax elasticities
+            "price_elas":  price_elas,
+            "quant_elas":  quant_elas,
+            "wealth_elas": wealth_elas,
+
+            # optional: useful internals for debugging/reuse
+            "ss": ss,
+            "vals": vals,
+            "x0": x0,
+            "x_theta": x_theta,
+        }
+
+
+
+

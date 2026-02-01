@@ -21,6 +21,10 @@ class CapIncModel:
         self.mu2        = 0.25  # labour 2 adjustment cost param
         self.phi1       = 1.35  # labour 1 adjustment cost curvature
         self.phi2       = 0.40  # labour 2 adjustment cost curvature
+
+        self.phi1       = 0.35  # labour 1 adjustment cost curvature
+        self.phi2       = 0.30  # labour 2 adjustment cost curvature
+
         self.L1         = 1.0   # total labour 1 supply
         self.L2         = 1.0   # total labour 2 supply
         self.z_last     = np.array([0.0, 0.0, 0.0, 0.0])
