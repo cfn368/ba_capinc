@@ -184,16 +184,16 @@ def inc_elas(m, sim, tau):
         ]   ,
         [
                 vals['sK']/(1-vals['sK']) * m.alphaK + m.betaK          ,
-                vals['s1']/(1-vals['s1']) * (m.alpha1L-(1-m.phi1)/m.phi1)
-                + m.beta1L - (1-m.phi1)/m.phi1                          ,
+                vals['s1']/(1-vals['s1']) * (m.alpha1L-(1+m.phi1)/m.phi1)
+                + m.beta1L - (1+m.phi1)/m.phi1                          ,
                 vals['s2']/(1-vals['s2']) * m.alpha2L + m.beta2L        ,
                 1.0
         ]   ,
         [
                 vals['sK']/(1-vals['sK']) * m.alphaK + m.betaK          ,
                 vals['s1']/(1-vals['s1']) * m.alpha1L + m.beta1L        ,
-                vals['s2']/(1-vals['s2']) * (m.alpha2L-(1-m.phi2)/m.phi2)
-                + m.beta2L - (1-m.phi2)/m.phi2                          ,
+                vals['s2']/(1-vals['s2']) * (m.alpha2L-(1+m.phi2)/m.phi2)
+                + m.beta2L - (1+m.phi2)/m.phi2                          ,
                 1.0
         ]   ,
         [
@@ -219,6 +219,7 @@ def inc_elas(m, sim, tau):
 
         epsS_LR = supply_vec @ x0
         epsS_SR = m.delta * (1 - m.theta) * (supply_vec @ x_theta)
+        # epsS_SR = m.delta * (supply_vec @ x_theta) # paperlike
         epsD    = - (-1/(1-m.alphaK) + demand_vec @ x0)
 
         print("\n" + "-"*44)

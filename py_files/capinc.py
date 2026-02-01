@@ -21,10 +21,6 @@ class CapIncModel:
         self.mu2        = 0.25  # labour 2 adjustment cost param
         self.phi1       = 1.35  # labour 1 adjustment cost curvature
         self.phi2       = 0.40  # labour 2 adjustment cost curvature
-
-        self.phi1       = 0.35  # labour 1 adjustment cost curvature
-        self.phi2       = 0.30  # labour 2 adjustment cost curvature
-
         self.L1         = 1.0   # total labour 1 supply
         self.L2         = 1.0   # total labour 2 supply
         self.z_last     = np.array([0.0, 0.0, 0.0, 0.0])
@@ -72,8 +68,8 @@ class CapIncModel:
             w1I = b1 * pI * I / L1I
             w2I = b2 * pI * I / L2I
 
-            rC = aK * C / KC        * (1-tau)
-            rI = bK * pI * I / KI   * (1-tau)
+            rC = aK * C / KC        
+            rI = bK * pI * I / KI   
 
             # 3.7 equilibrium conditions
             eq1 = rC - rI
@@ -279,3 +275,83 @@ class CapIncModel:
         sim["success"] = bool(getattr(sol, "success", False))
         sim["message"] = str(getattr(sol, "message", "no message"))
         return sim
+    
+
+
+    # EXTRA
+    # ========== ========== ========== ========== ==========
+    # Calibrate (mu1, mu2) to enforce zero SS wage premia
+    def calibrate(
+        self,
+        *,
+        tau=0.0,
+        K_guess=1.0,
+        q_guess=1.0,
+        clip=1e-10,
+        verbose=True,
+    ):
+        tau = float(tau)
+
+        # keep old values in case something fails
+        
+        mu1_old, mu2_old = self.mu1, self.mu2
+
+        def _sigmoid(z):
+            return 1.0 / (1.0 + np.exp(-z))
+
+        def _logit(p):
+            p = np.clip(float(p), clip, 1.0 - clip)
+            return np.log(p / (1.0 - p))
+
+        def _premia():
+            ss = self.solve_steady_state(K_guess=K_guess, q_guess=q_guess, tau=tau)
+            st = self.static_block_sigmoid(K=ss["K"], q=ss["q"], tau=tau, z0=(0.0, 0.0, 0.0, 0.0))
+            prem1 = float(np.log(st["w1I"] / st["w1C"]))
+            prem2 = float(np.log(st["w2I"] / st["w2C"]))
+            return ss, st, prem1, prem2
+
+        try:
+            z0 = np.array([_logit(self.mu1), _logit(self.mu2)], float)
+
+            def H(z):
+                self.mu1, self.mu2 = _sigmoid(z[0]), _sigmoid(z[1])
+                _, _, prem1, prem2 = _premia()
+                return np.array([prem1, prem2], float)
+
+            sol = root(H, z0, method="hybr")
+            if not sol.success:
+                raise RuntimeError(sol.message)
+
+            self.mu1, self.mu2 = _sigmoid(sol.x[0]), _sigmoid(sol.x[1])
+
+            ss, st, prem1, prem2 = _premia()
+
+            if verbose:
+                # premia implied by old mus
+                self.mu1, self.mu2 = mu1_old, mu2_old
+                _, _, prem1_old, prem2_old = _premia()
+                self.mu1, self.mu2 = _sigmoid(sol.x[0]), _sigmoid(sol.x[1])
+
+                print("\n" + "=" * 44)
+                print(" Calibrate mus: zero SS wage premia ")
+                print("=" * 44)
+                print(f"{'old':<8} mu1={mu1_old:.4f}, mu2={mu2_old:.4f}   "
+                      f"log(w1I/w1C)={prem1_old:+.2e}, log(w2I/w2C)={prem2_old:+.2e}")
+                print(f"{'new':<8} mu1={self.mu1:.4f}, mu2={self.mu2:.4f}   "
+                      f"log(w1I/w1C)={prem1:+.2e}, log(w2I/w2C)={prem2:+.2e}")
+                print("=" * 44 + "\n")
+
+            return {
+                "mu1": float(self.mu1),
+                "mu2": float(self.mu2),
+                "prem1_log_wI_wC": prem1,
+                "prem2_log_wI_wC": prem2,
+                "ss": ss,
+                "static_at_ss": st,
+                "success": True,
+            }
+
+        except Exception as e:
+            self.mu1, self.mu2 = mu1_old, mu2_old
+            raise RuntimeError(f"mu calibration failed: {e}")
+
