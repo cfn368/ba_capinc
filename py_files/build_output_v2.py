@@ -33,13 +33,7 @@ def welfare_effects(m, sim_raw, tau_long, dlog_net_long,
         m.z_last[:] = 0.0
         st_ss = m._static(ss["K"], ss["q"], tau=tau_ss)
 
-        # 4.1 wage bill
-        WB_C_1 = st_ss["w1C"] * st_ss["L1C"]
-        WB_C_2 = st_ss["w2C"] * st_ss["L2C"]
-        WB_I_1 = st_ss["w1I"] * st_ss["L1I"]
-        WB_I_2 = st_ss["w2I"] * st_ss["L2I"]
-
-        # 4.3 compute welfare gains (paper intention):
+        # 4.3 compute welfare gains (paper intention): CHANGE
         # d log wages vs baseline SS
         dlog_w1C = np.log(np.asarray(sim["w1C"], float) / float(st_ss["w1C"]))
         dlog_w2C = np.log(np.asarray(sim["w2C"], float) / float(st_ss["w2C"]))
@@ -47,31 +41,33 @@ def welfare_effects(m, sim_raw, tau_long, dlog_net_long,
         dlog_w2I = np.log(np.asarray(sim["w2I"], float) / float(st_ss["w2I"]))
 
         # sector worker welfare-flow paths
-        wg_C = (np.asarray(sim["w1C"], float) * dlog_w1C * np.asarray(sim["L1C"], float) +
-                np.asarray(sim["w2C"], float) * dlog_w2C * np.asarray(sim["L2C"], float))
+        wg_C = (np.asarray(st_ss["w1C"], float) * dlog_w1C * np.asarray(st_ss["L1C"], float) +
+                np.asarray(st_ss["w2C"], float) * dlog_w2C * np.asarray(st_ss["L2C"], float))
 
-        wg_I = (np.asarray(sim["w1I"], float) * dlog_w1I * np.asarray(sim["L1I"], float) +
-                np.asarray(sim["w2I"], float) * dlog_w2I * np.asarray(sim["L2I"], float))
+        wg_I = (np.asarray(st_ss["w1I"], float) * dlog_w1I * np.asarray(st_ss["L1I"], float) +
+                np.asarray(st_ss["w2I"], float) * dlog_w2I * np.asarray(st_ss["L2I"], float))
 
         # 4.4 alternative wg_K, here as last claimant
         # time-t value added in consumption units
-        Y_t = np.asarray(sim["C"], float) + np.asarray(sim["pI"], float) * np.asarray(sim["I"], float)
+        Y_t = np.asarray(st_ss["C"], float) + np.asarray(st_ss["pI"], float) * np.asarray(st_ss["I"], float)
 
         # time-t wage bill (use time-t wages and time-t labor)
-        WB_t = (np.asarray(sim["w1C"], float) * np.asarray(sim["L1C"], float) +
-                np.asarray(sim["w2C"], float) * np.asarray(sim["L2C"], float) +
-                np.asarray(sim["w1I"], float) * np.asarray(sim["L1I"], float) +
-                np.asarray(sim["w2I"], float) * np.asarray(sim["L2I"], float))
+        WB_t = (np.asarray(st_ss["w1C"], float) * np.asarray(st_ss["L1C"], float) +
+                np.asarray(st_ss["w2C"], float) * np.asarray(st_ss["L2C"], float) +
+                np.asarray(st_ss["w1I"], float) * np.asarray(st_ss["L1I"], float) +
+                np.asarray(st_ss["w2I"], float) * np.asarray(st_ss["L2I"], float))
 
         # time-t dividends, paper definition
         tau_t = np.asarray(tau_long, float)[sl]          # ensure aligned (T+1,)
-        D_t = (1.0 - tau_t) * (Y_t - WB_t)               # (T+1,)
+        dlog_net = np.log((1.0 - tau_t) / (1.0 - float(tau_ss)))
+
+        D_ss = (1.0 - float(tau_ss)) * (Y_t - WB_t)
 
         # workers total welfare-flow path
         wg_L_path = np.asarray(wg_C, float) + np.asarray(wg_I, float)
 
         # total welfare-flow path
-        WG_total_path = D_t * np.asarray(dlog_net, float)
+        WG_total_path = D_ss * np.asarray(dlog_net, float)
 
         # residual claimant
         wg_K = WG_total_path - wg_L_path    
@@ -151,7 +147,7 @@ def labour_share(m, sim, gamma=1):
         }
 
 ###########################################################
-# 2. incidence and elasticities
+# 3. incidence and elasticities
 ###########################################################
 
 def inc_elas(m, sim, tau):

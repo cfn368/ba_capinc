@@ -10,7 +10,7 @@ class CapIncModel:
 
         self.r          = 0.07  # world interest rate
         self.delta      = 0.15  # depreciation rate
-        self.theta      = 0.27  # capital share in capital production
+        self.theta      = 0.25  # capital share in capital production
         self.alphaK     = 0.36  # capital share in consumption production
         self.alpha1L    = 0.39  # labour 1 share in consumption production
         self.alpha2L    = 0.25  # labour 2 share in consumption production
@@ -278,23 +278,28 @@ class CapIncModel:
     
 
 
-    # EXTRA
-    # ========== ========== ========== ========== ==========
-    # Calibrate (mu1, mu2) to enforce zero SS wage premia
+    # ========== ========== ========== ========== ========== 
+    # Calibrate (mu1, mu2, phi1, phi2)
+    #  - enforce zero SS wage premia
+    #  - match investment-sector labor supply elasticities:
+    #       (1 - s1)*phi1 = target_elas1
+    #       (1 - s2)*phi2 = target_elas2
     def calibrate(
         self,
         *,
         tau=0.0,
         K_guess=1.0,
         q_guess=1.0,
+        target_elas1=1.0,
+        target_elas2=0.3,
         clip=1e-10,
         verbose=True,
     ):
         tau = float(tau)
 
         # keep old values in case something fails
-        
-        mu1_old, mu2_old = self.mu1, self.mu2
+        mu1_old, mu2_old = float(self.mu1), float(self.mu2)
+        phi1_old, phi2_old = float(self.phi1), float(self.phi2)
 
         def _sigmoid(z):
             return 1.0 / (1.0 + np.exp(-z))
@@ -303,55 +308,104 @@ class CapIncModel:
             p = np.clip(float(p), clip, 1.0 - clip)
             return np.log(p / (1.0 - p))
 
-        def _premia():
+        def _premia_and_elas():
+            # steady state + static eval at SS
             ss = self.solve_steady_state(K_guess=K_guess, q_guess=q_guess, tau=tau)
-            st = self.static_block_sigmoid(K=ss["K"], q=ss["q"], tau=tau, z0=(0.0, 0.0, 0.0, 0.0))
+            st = self.static_block_sigmoid(
+                K=ss["K"], q=ss["q"], tau=tau, z0=(0.0, 0.0, 0.0, 0.0)
+            )
+
             prem1 = float(np.log(st["w1I"] / st["w1C"]))
             prem2 = float(np.log(st["w2I"] / st["w2C"]))
-            return ss, st, prem1, prem2
+
+            # implied investment-sector labor supply elasticities
+            # eps_nI = (1 - s_n) * phi_n
+            s1, s2 = float(st["s1"]), float(st["s2"])
+            eps1 = (1.0 - s1) * float(self.phi1)
+            eps2 = (1.0 - s2) * float(self.phi2)
+
+            return ss, st, prem1, prem2, eps1, eps2
 
         try:
-            z0 = np.array([_logit(self.mu1), _logit(self.mu2)], float)
+            # unknowns: z = [logit(mu1), logit(mu2), log(phi1), log(phi2)]
+            z0 = np.array(
+                [
+                    _logit(mu1_old),
+                    _logit(mu2_old),
+                    np.log(max(phi1_old, 1e-12)),
+                    np.log(max(phi2_old, 1e-12)),
+                ],
+                float,
+            )
 
             def H(z):
-                self.mu1, self.mu2 = _sigmoid(z[0]), _sigmoid(z[1])
-                _, _, prem1, prem2 = _premia()
-                return np.array([prem1, prem2], float)
+                self.mu1 = _sigmoid(z[0])
+                self.mu2 = _sigmoid(z[1])
+                self.phi1 = float(np.exp(z[2]))
+                self.phi2 = float(np.exp(z[3]))
+
+                _, _, prem1, prem2, eps1, eps2 = _premia_and_elas()
+
+                return np.array(
+                    [
+                        prem1,                      # = 0
+                        prem2,                      # = 0
+                        eps1 - float(target_elas1), # = 0
+                        eps2 - float(target_elas2), # = 0
+                    ],
+                    float,
+                )
 
             sol = root(H, z0, method="hybr")
             if not sol.success:
                 raise RuntimeError(sol.message)
 
-            self.mu1, self.mu2 = _sigmoid(sol.x[0]), _sigmoid(sol.x[1])
+            # decode solution cleanly
+            self.mu1 = _sigmoid(sol.x[0])
+            self.mu2 = _sigmoid(sol.x[1])
+            self.phi1 = float(np.exp(sol.x[2]))
+            self.phi2 = float(np.exp(sol.x[3]))
 
-            ss, st, prem1, prem2 = _premia()
+            ss, st, prem1, prem2, eps1, eps2 = _premia_and_elas()
 
             if verbose:
-                # premia implied by old mus
-                self.mu1, self.mu2 = mu1_old, mu2_old
-                _, _, prem1_old, prem2_old = _premia()
-                self.mu1, self.mu2 = _sigmoid(sol.x[0]), _sigmoid(sol.x[1])
+                # implied by old params (restore temporarily)
+                self.mu1, self.mu2, self.phi1, self.phi2 = mu1_old, mu2_old, phi1_old, phi2_old
+                _, _, prem1_old, prem2_old, eps1_old, eps2_old = _premia_and_elas()
 
-                print("\n" + "=" * 44)
-                print(" Calibrate mus: zero SS wage premia ")
-                print("=" * 44)
-                print(f"{'old':<8} mu1={mu1_old:.4f}, mu2={mu2_old:.4f}   "
-                      f"log(w1I/w1C)={prem1_old:+.2e}, log(w2I/w2C)={prem2_old:+.2e}")
-                print(f"{'new':<8} mu1={self.mu1:.4f}, mu2={self.mu2:.4f}   "
-                      f"log(w1I/w1C)={prem1:+.2e}, log(w2I/w2C)={prem2:+.2e}")
-                print("=" * 44 + "\n")
+                # restore new
+                self.mu1 = _sigmoid(sol.x[0])
+                self.mu2 = _sigmoid(sol.x[1])
+                self.phi1 = float(np.exp(sol.x[2]))
+                self.phi2 = float(np.exp(sol.x[3]))
+
+                print("\n" + "=" * 60)
+                print(" Calibrate household: zero wage premia + target eps_nI ")
+                print("=" * 60)
+                print(f"{'targets':<10} prem1=0, prem2=0, eps1={target_elas1:.3f}, eps2={target_elas2:.3f}")
+                print("-" * 60)
+                print(f"{'old':<10} mu1={mu1_old:.4f}, mu2={mu2_old:.4f}, phi1={phi1_old:.4f}, phi2={phi2_old:.4f}")
+                print(f"{'':<10} log(w1I/w1C)={prem1_old:+.2e}, log(w2I/w2C)={prem2_old:+.2e}, eps1={eps1_old:.3f}, eps2={eps2_old:.3f}")
+                print("-" * 60)
+                print(f"{'new':<10} mu1={float(self.mu1):.4f}, mu2={float(self.mu2):.4f}, phi1={float(self.phi1):.4f}, phi2={float(self.phi2):.4f}")
+                print(f"{'':<10} log(w1I/w1C)={prem1:+.2e}, log(w2I/w2C)={prem2:+.2e}, eps1={eps1:.3f}, eps2={eps2:.3f}")
+                print("=" * 60 + "\n")
 
             return {
                 "mu1": float(self.mu1),
                 "mu2": float(self.mu2),
+                "phi1": float(self.phi1),
+                "phi2": float(self.phi2),
                 "prem1_log_wI_wC": prem1,
                 "prem2_log_wI_wC": prem2,
+                "eps1_I": float(eps1),
+                "eps2_I": float(eps2),
                 "ss": ss,
                 "static_at_ss": st,
                 "success": True,
             }
 
         except Exception as e:
-            self.mu1, self.mu2 = mu1_old, mu2_old
-            raise RuntimeError(f"mu calibration failed: {e}")
+            self.mu1, self.mu2, self.phi1, self.phi2 = mu1_old, mu2_old, phi1_old, phi2_old
+            raise RuntimeError(f"household calibration failed: {e}")
 
