@@ -382,13 +382,20 @@ class CapIncModel:
                 print("\n" + "=" * 60)
                 print(" Calibrate household: zero wage premia + target eps_nI ")
                 print("=" * 60)
-                print(f"{'targets':<10} prem1=0, prem2=0, eps1={target_elas1:.3f}, eps2={target_elas2:.3f}")
+                print(f"{'targets':<10} prem1=0, prem2=0, eps1={target_elas1:.1f}, eps2={target_elas2:.1f}")
                 print("-" * 60)
-                print(f"{'old':<10} mu1={mu1_old:.4f}, mu2={mu2_old:.4f}, phi1={phi1_old:.4f}, phi2={phi2_old:.4f}")
-                print(f"{'':<10} log(w1I/w1C)={prem1_old:+.2e}, log(w2I/w2C)={prem2_old:+.2e}, eps1={eps1_old:.3f}, eps2={eps2_old:.3f}")
+                print(f"{'old':<10} mu1={mu1_old:.2f}, mu2={mu2_old:.2f}   =>")
+                print(f"{'':<10} log(w1I/w1C)={prem1_old:+.2e}, log(w2I/w2C)={prem2_old:+.2e}\n")
+
+                print(f"{'old':<10} phi1={phi1_old:.2f}, phi2={phi2_old:.2f} =>")
+                print(f"{'':<10} eps1={eps1_old:.3f}, eps2={eps2_old:.3f}")
                 print("-" * 60)
-                print(f"{'new':<10} mu1={float(self.mu1):.4f}, mu2={float(self.mu2):.4f}, phi1={float(self.phi1):.4f}, phi2={float(self.phi2):.4f}")
-                print(f"{'':<10} log(w1I/w1C)={prem1:+.2e}, log(w2I/w2C)={prem2:+.2e}, eps1={eps1:.3f}, eps2={eps2:.3f}")
+                print(f"{'new':<10} mu1={float(self.mu1):.4f}, mu2={float(self.mu2):.4f}   =>")
+                print(f"{'':<10} log(w1I/w1C)={prem1:+.2e}, log(w2I/w2C)={prem2:+.2e}\n")
+                
+                print(f"{'new':<10} phi1={float(self.phi1):.4f}, phi2={float(self.phi2):.4f} =>")
+                print(f"{'':<10} eps1={eps1:.3f}, eps2={eps2:.3f}")
+
                 print("=" * 60 + "\n")
 
             return {

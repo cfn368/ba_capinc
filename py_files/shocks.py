@@ -56,6 +56,8 @@ def perm_tc(T=25, tau0=0.32, tauT=0.22, rho=0.7, tail=50):
     net_t[T + 1:] = net_path[T]  
     tau_t = 1.0 - net_t
     dlog  = np.log(net_t / net0)
+    
+    tauT  = tau_t[-1]
 
     return net_t, tau_t, dlog, tauT 
 
@@ -64,7 +66,7 @@ def perm_tc(T=25, tau0=0.32, tauT=0.22, rho=0.7, tail=50):
 ###########################################################
 
 
-def perm_tc_emp(tail=50):
+def perm_tc_emp(tail=50, normalized=True):
 
     # 1. 25 year of data available, fetch
     url = (
@@ -92,6 +94,10 @@ def perm_tc_emp(tail=50):
     cit_pct = df_cit["cit_rate"].to_numpy(dtype=float) 
     tau_raw = cit_pct / 100.0 
     tau_t = np.concatenate([tau_raw, np.full(tail, tau_raw[-1])])
+
+    if normalized:
+        tau_t -= 0.32
+
     net_t = 1.0 - tau_t
     net0 = net_t[0]
     dlog = np.log(net_t / net0)

@@ -5,99 +5,123 @@ import matplotlib.pyplot as plt
 # 1. paper like wealth effects
 ###########################################################
 
-def welfare_effects(m, sim_raw, tau_long, dlog_net_long, 
-                    T=25, tail=50, tau_ss=None,
-                    ):
+def welfare_effects(m, sim_raw, tau_long, dlog_net_long,
+                    T=25, tail=50, tau_ss=None):
 
-        # 1. plot only slice of full simulation timeline
-        ss = m.solve_steady_state(tau=tau_ss)
-
-        sl = slice(0, T + 1)
+        # 0) horizons
+        T = int(T); tail = int(tail)
         T_solve = int(T + tail)
-        sim = {k: (np.asarray(v)[sl] if isinstance(v, (list, np.ndarray)) and len(v) == T_solve + 1 else v)
-                for k, v in sim_raw.items()}
-        
-        # 2. get relevant
-        dlog_net = dlog_net_long[sl]
+        sl_full = slice(0, T_solve + 1)
+        sl_plot = slice(0, T + 1)
+
+        # 1) steady state
+        ss = m.solve_steady_state(tau=float(tau_ss))
+
+        # 2) coerce sim to full horizon arrays (NO truncation yet)
+        sim_full = {
+                k: (np.asarray(v)[sl_full] if isinstance(v, (list, np.ndarray)) and len(v) >= T_solve + 1 else v)
+                for k, v in sim_raw.items()
+        }
+
+        # 3) plot horizon index
         h = np.arange(T + 1)
 
-        # 3. left panel: percent deviations
-        pct = lambda x, xss: 100 * np.log(np.asarray(x) / float(xss))
+        # 4) percent deviations for plotting (computed from full then sliced)
+        pct = lambda x, xss: 100 * np.log(np.asarray(x, float) / float(xss))
+        dq_full  = pct(sim_full["q"],  ss["q"])
+        dpI_full = pct(sim_full["pI"], ss["pI"])
+        dK_full  = pct(sim_full["K"],  ss["K"])
 
-        dq  = pct(sim["q"],  ss["q"])   # relative price of capital good
-        dpI = pct(sim["pI"], ss["pI"])  # investment price
-        dK  = pct(sim["K"],  ss["K"])   # capital stock
+        dq  = dq_full[sl_plot]
+        dpI = dpI_full[sl_plot]
+        dK  = dK_full[sl_plot]
 
-        # 4. right panel: undiscounted welfare effects
-        # ... normalised by C_ss
+        # 5) SS static (baseline objects)
         m.z_last[:] = 0.0
-        st_ss = m._static(ss["K"], ss["q"], tau=tau_ss)
+        st_ss = m._static(ss["K"], ss["q"], tau=float(tau_ss))
 
-        # 4.3 compute welfare gains (paper intention): CHANGE
-        # d log wages vs baseline SS
-        dlog_w1C = np.log(np.asarray(sim["w1C"], float) / float(st_ss["w1C"]))
-        dlog_w2C = np.log(np.asarray(sim["w2C"], float) / float(st_ss["w2C"]))
-        dlog_w1I = np.log(np.asarray(sim["w1I"], float) / float(st_ss["w1I"]))
-        dlog_w2I = np.log(np.asarray(sim["w2I"], float) / float(st_ss["w2I"]))
+        # SS wage bills and labor (envelope theorem: hold L at baseline optimum)
+        w1C_ss, L1C_ss = float(st_ss["w1C"]), float(st_ss["L1C"])
+        w2C_ss, L2C_ss = float(st_ss["w2C"]), float(st_ss["L2C"])
+        w1I_ss, L1I_ss = float(st_ss["w1I"]), float(st_ss["L1I"])
+        w2I_ss, L2I_ss = float(st_ss["w2I"]), float(st_ss["L2I"])
 
-        # sector worker welfare-flow paths
-        wg_C = (np.asarray(st_ss["w1C"], float) * dlog_w1C * np.asarray(st_ss["L1C"], float) +
-                np.asarray(st_ss["w2C"], float) * dlog_w2C * np.asarray(st_ss["L2C"], float))
+        # 6) FULL-HORIZON welfare paths
+        # d log wages vs baseline SS (full horizon)
+        dlog_w1C_full = np.log(np.asarray(sim_full["w1C"], float) / w1C_ss)
+        dlog_w2C_full = np.log(np.asarray(sim_full["w2C"], float) / w2C_ss)
+        dlog_w1I_full = np.log(np.asarray(sim_full["w1I"], float) / w1I_ss)
+        dlog_w2I_full = np.log(np.asarray(sim_full["w2I"], float) / w2I_ss)
 
-        wg_I = (np.asarray(st_ss["w1I"], float) * dlog_w1I * np.asarray(st_ss["L1I"], float) +
-                np.asarray(st_ss["w2I"], float) * dlog_w2I * np.asarray(st_ss["L2I"], float))
+        # worker welfare-flow paths (envelope-consistent, SS weights)
+        wg_C_full = (w1C_ss * L1C_ss) * dlog_w1C_full + (w2C_ss * L2C_ss) * dlog_w2C_full
+        wg_I_full = (w1I_ss * L1I_ss) * dlog_w1I_full + (w2I_ss * L2I_ss) * dlog_w2I_full
+        wg_L_full = wg_C_full + wg_I_full
 
-        # 4.4 alternative wg_K, here as last claimant
-        # time-t value added in consumption units
-        Y_t = np.asarray(st_ss["C"], float) + np.asarray(st_ss["pI"], float) * np.asarray(st_ss["I"], float)
+        # net-of-tax log change (FULL). You can ignore dlog_net_long input here to avoid mismatch bugs.
+        tau_t_full = np.asarray(tau_long, float)[sl_full]
+        dlog_net_full = np.log((1.0 - tau_t_full) / (1.0 - float(tau_ss)))
 
-        # time-t wage bill (use time-t wages and time-t labor)
-        WB_t = (np.asarray(st_ss["w1C"], float) * np.asarray(st_ss["L1C"], float) +
-                np.asarray(st_ss["w2C"], float) * np.asarray(st_ss["L2C"], float) +
-                np.asarray(st_ss["w1I"], float) * np.asarray(st_ss["L1I"], float) +
-                np.asarray(st_ss["w2I"], float) * np.asarray(st_ss["L2I"], float))
+        # constant SS dividends D (scalar)
+        C_ss  = float(st_ss["C"])
+        pI_ss = float(st_ss["pI"])
+        I_ss  = float(st_ss["I"])
+        Y_ss  = C_ss + pI_ss * I_ss
+        WB_ss = (w1C_ss * L1C_ss + w2C_ss * L2C_ss + w1I_ss * L1I_ss + w2I_ss * L2I_ss)
+        D_ss  = (1.0 - float(tau_ss)) * (Y_ss - WB_ss)   # scalar
 
-        # time-t dividends, paper definition
-        tau_t = np.asarray(tau_long, float)[sl]          # ensure aligned (T+1,)
-        dlog_net = np.log((1.0 - tau_t) / (1.0 - float(tau_ss)))
+        WG_total_full = D_ss * dlog_net_full
+        wg_K_full = WG_total_full - wg_L_full
 
-        D_ss = (1.0 - float(tau_ss)) * (Y_t - WB_t)
+        # 7) Table values: use FULL horizon sums (or PV if you later add discounting)
+        
+        # add discounting
+        t_full = np.arange(T_solve + 1)
+        beta = 1/(1 + m.r) ** t_full
 
-        # workers total welfare-flow path
-        wg_L_path = np.asarray(wg_C, float) + np.asarray(wg_I, float)
+        pv = lambda x: float(np.sum(beta * np.asarray(x, float)))
 
-        # total welfare-flow path
-        WG_total_path = D_ss * np.asarray(dlog_net, float)
+        C_norm = float(ss["C"])
 
-        # residual claimant
-        wg_K = WG_total_path - wg_L_path    
+        table = {
+        "pv_wg_C": pv(wg_C_full),
+        "pv_wg_I": pv(wg_I_full),
+        "pv_wg_K": pv(wg_K_full),
+        "pv_WG":   pv(WG_total_full),
 
-        # 4.5 ... in ss consumption units
-        wC_pct = 100 * wg_C / ss["C"]
-        wI_pct = 100 * wg_I / ss["C"]
-        wK_pct = 100 * wg_K / ss["C"]
-        WG_pct = 100 * WG_total_path / ss['C']
+        "wg_C_total_pctC": 100.0 * pv(wg_C_full) / C_norm,
+        "wg_I_total_pctC": 100.0 * pv(wg_I_full) / C_norm,
+        "wg_K_total_pctC": 100.0 * pv(wg_K_full) / C_norm,
+        "WG_total_pctC":   100.0 * pv(WG_total_full) / C_norm,
+        }
 
-        # 4.6 append solution dict
-        sim["dq_pct"]  = np.asarray(dq, float)
-        sim["dpI_pct"] = np.asarray(dpI, float)
-        sim["dK_pct"]  = np.asarray(dK, float)
+        # 8) Plot arrays: slice AFTER computing full welfare
+        wC_pct = 100.0 * wg_C_full[sl_plot] / C_norm
+        wI_pct = 100.0 * wg_I_full[sl_plot] / C_norm
+        wK_pct = 100.0 * wg_K_full[sl_plot] / C_norm
+        WG_pct = 100.0 * WG_total_full[sl_plot] / C_norm
 
-        sim["wg_C"]  = np.asarray(wg_C, float)
-        sim["wg_I"]  = np.asarray(wg_I, float)
-        sim["wg_K"]  = np.asarray(wg_K, float)
-        sim["WG_total_path"]  = np.asarray(WG_total_path, float)
+        # 9) build sim dict for return (plot horizon only, but include full-table scalars)
+        sim = {k: (v[sl_plot] if isinstance(v, np.ndarray) and v.shape[0] == T_solve + 1 else v)
+                for k, v in sim_full.items()}
 
-        # 5. plot
-        fig, (ax1, ax2) = plt.subplots(1, 2, 
-                                        figsize=(12, 6), 
-                                        constrained_layout=True,
-        )
+        sim["dq_pct"]  = dq
+        sim["dpI_pct"] = dpI
+        sim["dK_pct"]  = dK
 
-        # (a) Capital and valuations
-        ax1.plot(h, dq, color='k', ls="-",  lw=2, label="value of installed capital $q$")
-        ax1.plot(h, dpI, color='k', ls=":",  lw=2, label="price of capital good $p_I$")
-        ax1.plot(h, dK,  "-",   lw=2, label="capital stock $K$", color='crimson')
+        sim["wg_C"] = wg_C_full[sl_plot]
+        sim["wg_I"] = wg_I_full[sl_plot] 
+        sim["wg_K"] = wg_K_full[sl_plot]
+        sim["WG_total_path"] = WG_total_full[sl_plot]
+
+        sim["table"] = table  
+
+        # 10) plot
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6), constrained_layout=True)
+
+        ax1.plot(h, dq,  color='k', ls="-", lw=2, label="value of installed capital $q$")
+        ax1.plot(h, dpI, color='k', ls=":", lw=2, label="price of capital good $p_I$")
+        ax1.plot(h, dK,  color='crimson', ls="-", lw=2, label="capital stock $K$")
         ax1.axhline(0, color="k", ls=":", lw=1, alpha=0.6)
         ax1.set_xlabel("horizon")
         ax1.set_ylabel("deviation (%)")
@@ -105,11 +129,10 @@ def welfare_effects(m, sim_raw, tau_long, dlog_net_long,
         ax1.legend(frameon=True)
         ax1.grid(True, which="both", linestyle="--", alpha=0.5)
 
-        # (b) Welfare effects
         ax2.plot(h, wC_pct, lw=2, label="consumption sector workers", color="k")
-        ax2.plot(h, wI_pct, lw=2, label="investment sector workers",  color='#00B8D9')
-        ax2.plot(h, wK_pct, lw=2, label="capitalists",                color='crimson')
-        ax2.plot(h, WG_pct, lw=2, label="Total wealth gain", color='gray', ls=':')
+        ax2.plot(h, wI_pct, lw=2, label="investment sector workers",  color="#00B8D9")
+        ax2.plot(h, wK_pct, lw=2, label="capitalists",                color="crimson")
+        ax2.plot(h, WG_pct, lw=2, label="Total wealth gain",          color="gray", ls=":")
         ax2.axhline(0, color="k", ls=":", lw=1, alpha=0.6)
         ax2.set_xlabel("horizon")
         ax2.set_ylabel("welfare gain / consumption (%)")
@@ -119,32 +142,33 @@ def welfare_effects(m, sim_raw, tau_long, dlog_net_long,
 
         return fig, (ax1, ax2), ss, sim
 
+
 ###########################################################
 # 2. labour income share
 ###########################################################
 
 def labour_share(m, sim, gamma=1):
-    # 1) value added in consumption units
-    C  = np.asarray(sim["C"], float)
-    I  = np.asarray(sim["I"], float)
-    pI = np.asarray(sim["pI"], float)
-    Y  = C + pI * I
+        # 1) value added in consumption units
+        C  = np.asarray(sim["C"], float)
+        I  = np.asarray(sim["I"], float)
+        pI = np.asarray(sim["pI"], float)
+        Y  = C + pI * I
 
-    # 2) value weights of sectors
-    wI = (pI * I) / Y
-    wC = C / Y
+        # 2) value weights of sectors
+        wI = (pI * I) / Y
+        wC = C / Y
 
-    LS_C = (1 - m.alphaK) * wC
-    LS_I = (1 - m.betaK) * wI
+        LS_C = (1 - m.alphaK) * wC
+        LS_I = (1 - m.betaK) * wI
 
-    # 3) aggregate labor share (competitive Cobb–Douglas within each sector)
-    LS = LS_C + LS_I
-    LS_gamma = LS_C + gamma*LS_I
-    return {"Y": Y, "wC": wC, "wI": wI, 
-            "LS": LS, 'LS_C': LS_C, 'LS_I': LS_I,
-            'LS_gamma': LS_gamma, 'pII': pI * I,
-            'C': C,
-        }
+        # 3) aggregate labor share (competitive Cobb–Douglas within each sector)
+        LS = LS_C + LS_I
+        LS_gamma = LS_C + gamma*LS_I
+        return {"Y": Y, "wC": wC, "wI": wI, 
+                "LS": LS, 'LS_C': LS_C, 'LS_I': LS_I,
+                'LS_gamma': LS_gamma, 'pII': pI * I,
+                'C': C,
+                }
 
 ###########################################################
 # 3. incidence and elasticities
@@ -153,10 +177,14 @@ def labour_share(m, sim, gamma=1):
 def inc_elas(m, sim, tau):
 
         # ========== ========== ========== ========== ========== 
-        # 1. tax incidence
-        consump_w = sim['wg_C'].sum() / sim['WG_total_path'].sum()
-        investm_w = sim['wg_I'].sum() / sim['WG_total_path'].sum()
-        capital_o = sim['wg_K'].sum() / sim['WG_total_path'].sum()
+        # 1. tax incidence 
+        consump_w = sim["table"]["pv_wg_C"] / sim["table"]["pv_WG"]
+        investm_w = sim["table"]["pv_wg_I"] / sim["table"]["pv_WG"]
+        capital_o = sim["table"]["pv_wg_K"] / sim["table"]["pv_WG"]
+
+        # consump_w = sim['wg_C'].sum() / sim['WG_total_path'].sum()
+        # investm_w = sim['wg_I'].sum() / sim['WG_total_path'].sum()
+        # capital_o = sim['wg_K'].sum() / sim['WG_total_path'].sum()
 
         print("\n" + "="*44)
         print("-"*44)
