@@ -70,7 +70,7 @@ def welfare_effects(m, sim_raw, tau_long, dlog_net_long,
         WB_ss = (w1C_ss * L1C_ss + w2C_ss * L2C_ss + w1I_ss * L1I_ss + w2I_ss * L2I_ss)
         D_ss  = (1.0 - float(tau_ss)) * (Y_ss - WB_ss)   # scalar
 
-        WG_total_full = D_ss * dlog_net_full
+        WG_total_full = D_ss * dlog_net_full 
         wg_K_full = WG_total_full - wg_L_full
 
         # 7) Table values: use FULL horizon sums (or PV if you later add discounting)
