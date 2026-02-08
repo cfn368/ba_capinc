@@ -11,16 +11,18 @@ class CapIncModel:
         self.r          = 0.07  # world interest rate
         self.delta      = 0.15  # depreciation rate
         self.theta      = 0.25  # capital share in capital production
+        
         self.alphaK     = 0.36  # capital share in consumption production
         self.alpha1L    = 0.39  # labour 1 share in consumption production
         self.alpha2L    = 0.25  # labour 2 share in consumption production
         self.betaK      = 0.26  # capital share in investment production
         self.beta1L     = 0.46  # labour 1 share in investment production
         self.beta2L     = 0.28  # labour 2 share in investment production
+        
         self.mu1        = 0.26  # labour 1 adjustment cost param
         self.mu2        = 0.25  # labour 2 adjustment cost param
-        self.phi1       = 1.35  # labour 1 adjustment cost curvature
-        self.phi2       = 0.40  # labour 2 adjustment cost curvature
+        self.phi1       = 1.00  # labour 1 adjustment cost curvature
+        self.phi2       = 0.30  # labour 2 adjustment cost curvature
         self.L1         = 1.0   # total labour 1 supply
         self.L2         = 1.0   # total labour 2 supply
         self.z_last     = np.array([0.0, 0.0, 0.0, 0.0])
