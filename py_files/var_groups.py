@@ -1,4 +1,6 @@
 
+import pandas as pd
+
 # ========== ========== ========== ========== ==========
 # 1. simulation variables
 model_var = {
@@ -37,7 +39,7 @@ def panels(gamma):
 ]
     
 # ========== ========== ========== ========== ==========
-# 2. empirical variables
+# 2. investment share
 
 # main categories
 tilgange2_var = [
@@ -238,3 +240,55 @@ investment_type = {
 }
 
 
+# ========== ========== ========== ========== ==========
+# 3. labour share
+
+mothers = pd.Index([
+    'A Agriculture, forestry and fishing', 'B Mining and quarrying',
+    'C Manufacturing',
+    'D Electricity, gas, steam and air conditioning supply',
+    'E Water supply, sewerage and waste management', 'F Construction',
+    'G Wholesale and retail trade', 'H Transportation',
+    'I Accommodation and food service activities',
+    'J Information and communication', 'K Financial and insurance',
+    'L Real estate activities', 'M Knowledge-based services',
+    'N Travel agent, cleaning, and other operationel services',
+    'O Public administration, defence and compulsory social security',
+    'P Education', 'Q Human health and social work',
+    'R Arts, entertainment and recreation activities',
+    'S Other service activities etc.'
+])
+
+subs = pd.Index([
+    'A Agriculture, forestry and fishing', 'B Mining and quarrying',
+    'CA Manufacture of food products, beverages and tobacco',
+    'CB Textiles and leather products',
+    'CC Wood and paper products and printing', 'CD Oil refinery etc.',
+    'CE Manufacture of chemicals', 'CF Pharmaceuticals',
+    'CG Manufacture of plastic, glass and concrete',
+    'CH Basic metals and fabricated metal products',
+    'CI Manufacture of electronic components',
+    'CJ Electrical equipment', 'CK Manufacture of machinery',
+    'CL Transport equipment',
+    'CM Manufacture of furniture and other manufacturing etc.',
+    'D Electricity, gas, steam and air conditioning supply',
+    'E Water supply, sewerage and waste management', 'F Construction',
+    'G Wholesale and retail trade', 'H Transportation',
+    'I Accommodation and food service activities',
+    'JA Publishing, television and radio broadcasting',
+    'JB Telecommunications',
+    'JC IT and information service activities',
+    'K Financial and insurance',
+    'LA Real estate activities and renting of non-residential buildings',
+    'LB Dwellings', 'MA Consultancy etc.',
+    'MB Scientific research and development',
+    'MC Advertising and other business services',
+    'N Travel agents, cleaning, and other operationel services',
+    'O Public administration, defence and compulsory social security',
+    # 'Of which: General government', 
+    'P Education',
+    'QA Human health activities', 'QB Residential care',
+    'R Arts, entertainment and recreation activities',
+    'SA Other service activities',
+    'SB Activities of households as employers of domestic personnel'
+])

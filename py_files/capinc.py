@@ -19,13 +19,13 @@ class CapIncModel:
         self.beta1L     = 0.46 
         self.beta2L     = 0.28  
         
-        # DK calib (initial)
-        self.alphaK     = 1- .311421 - .449092
-        self.alpha1L    = 0.311421
-        self.alpha2L    = 0.449092
-        self.betaK      = 1 - .381376 - .304289
-        self.beta1L     = 0.381376
-        self.beta2L     = 0.304289
+        # DK calib (WIP)
+        # self.alphaK     = 1- .239679 - .336729
+        # self.alpha1L    = 0.239679
+        # self.alpha2L    = 0.336729
+        # self.betaK      = 1 - .269555 - .411783
+        # self.beta1L     = 0.269555
+        # self.beta2L     = 0.411783
         
         self.mu1        = 0.26  # labour 1 adjustment cost param
         self.mu2        = 0.25  # labour 2 adjustment cost param
