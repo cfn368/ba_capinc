@@ -30,6 +30,11 @@ import py_files.build_output_v2 as build_output
 import py_files.var_groups as var_groups
 
 
+import py_files.build_output_ALTERNATIVE as build_output_ALTERNATIVE
+from py_files.capinc_ALTERNATIVE import CapIncModel_ALTERNATIVE
+
+
+
 def enable_autoreload(mode: int = 2) -> None:
     """
     Enable autoreload in IPython/Jupyter if available.
@@ -98,4 +103,5 @@ __all__ = [
     "dataclass",
     # project imports
     "CapIncModel", "shocks", "build_output", "var_groups",
+    'build_output_ALTERNATIVE', 'CapIncModel_ALTERNATIVE'
 ]
