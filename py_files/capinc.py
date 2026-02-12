@@ -12,20 +12,20 @@ class CapIncModel:
         self.delta      = 0.15  # depreciation rate
         self.theta      = 0.25  # capital share in capital production
         
-        self.alphaK     = 0.36  
-        self.alpha1L    = 0.39  
-        self.alpha2L    = 0.25  
-        self.betaK      = 0.26  
-        self.beta1L     = 0.46 
-        self.beta2L     = 0.28  
+        # self.alphaK     = 0.36  
+        # self.alpha1L    = 0.39  
+        # self.alpha2L    = 0.25  
+        # self.betaK      = 0.26  
+        # self.beta1L     = 0.46 
+        # self.beta2L     = 0.28  
         
         # DK calib (WIP)
-        # self.alphaK     = 1- .239679 - .336729
-        # self.alpha1L    = 0.239679
-        # self.alpha2L    = 0.336729
-        # self.betaK      = 1 - .269555 - .411783
-        # self.beta1L     = 0.269555
-        # self.beta2L     = 0.411783
+        self.alphaK     = 1- .253319 - .339977
+        self.alpha1L    = 0.253319
+        self.alpha2L    = 0.339977
+        self.betaK      = 1 - .197807 - .311359
+        self.beta1L     = 0.197807
+        self.beta2L     = 0.311359
         
         self.mu1        = 0.26  # labour 1 adjustment cost param
         self.mu2        = 0.25  # labour 2 adjustment cost param
