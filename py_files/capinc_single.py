@@ -3,7 +3,7 @@ from scipy.optimize import least_squares
 import numpy as np
 
 
-class CapIncModel_ALTERNATIVE:
+class CapIncModel_single:
 
     # 1. initiate
     def __init__(self):

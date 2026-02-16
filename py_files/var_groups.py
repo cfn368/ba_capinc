@@ -1,4 +1,3 @@
-
 import pandas as pd
 
 # ========== ========== ========== ========== ==========
@@ -47,6 +46,13 @@ tilgange2_var = [
     'TCJ', 'TCK', 'TCL', 'TCM', 'TD', 'TE', 'TF', 'TG', 'TH', 'TI', 'TJA',
     'TJB', 'TJC', 'TK', 'TLA', 'TLB', 'TMA', 'TMB', 'TMC', 'TN', 'TO', 'TP',
     'TQA', 'TQB', 'TR', 'TSA', 'TSB'    
+]
+
+anveldelse_var = [
+    'AA', 'AB', 'ACA', 'ACB', 'ACC', 'ACD', 'ACE', 'ACF', 'ACG', 'ACH', 'ACI',
+    'ACJ', 'ACK', 'ACL', 'ACM', 'AD', 'AE', 'AF', 'AG', 'AH', 'AI', 'AJA',
+    'AJB', 'AJC', 'AK', 'ALA', 'ALB', 'AMA', 'AMB', 'AMC', 'AN', 'AO', 'AP',
+    'AQA', 'AQB', 'AR', 'ASA', 'ASB'    
 ]
 
 # link between sub and main categories
@@ -155,9 +161,9 @@ industry_classification = {
     '74750': 'organisational',
     
     # Administrative/operational services - intangible (organizational capital)
-    '77000': 'tangible',   # Rental and leasing (of physical assets)
+    '77000': 'tangible',        # Rental and leasing (of physical assets)
     '78000': 'organisational',  # Employment activities
-    '79000': 'intangible',  # Travel agent activities
+    '79000': 'intangible',      # Travel agent activities
     '80820': 'organisational',  # Security, building services, other business support
     
     # Public administration - intangible
@@ -292,3 +298,54 @@ subs = pd.Index([
     'SA Other service activities',
     'SB Activities of households as employers of domestic personnel'
 ])
+
+# Investment sector (capital-producing industries)
+investment_industries = {
+    'CC': 'Wood and paper products and printing',  
+    'CG': 'Manufacture of plastic, glass and concrete',
+    'CE': 'Manufacture of chemicals',
+    'CF': 'Pharmaceuticals',  # 95.8% intangible investment (Denmark-specific)
+    'CH': 'Basic metals and fabricated metal products',
+    'CI': 'Manufacture of electronic components',
+    'CJ': 'Electrical equipment',
+    'CK': 'Manufacture of machinery',
+    'CM': 'Manufacture of furniture and other manufacturing',
+    'F': 'Construction',
+    'MA': 'Consultancy etc.',
+    'MB': 'Scientific research and development',
+    'JC': 'IT and information service activities',
+}
+
+# Consumption sector (consumption-producing industries)
+consumption_industries = {
+    'A': 'Agriculture, forestry and fishing',
+    'B': 'Mining and quarrying',
+    'CA': 'Manufacture of food products, beverages and tobacco',
+    'CB': 'Textiles and leather products',
+    'CD': 'Oil refinery etc.', 
+    'CL': 'Transport equipment',
+    'D': 'Electricity, gas, steam and air conditioning supply',
+    'E': 'Water supply, sewerage and waste management',
+    'G': 'Wholesale and retail trade',
+    'H': 'Transportation',
+    'I': 'Accommodation and food service activities',
+    'JA': 'Publishing, television and radio broadcasting', 
+    'JB': 'Telecommunications',
+    'K': 'Financial and insurance',
+    'LA': 'Real estate activities and renting of non-residential',
+    'LB': 'Dwellings',
+    'MC': 'Advertising and other business services',
+    'N': 'Travel agents, cleaning, and other operational support services',
+    'O': 'Public administration, defence and compulsory social security',
+    'P': 'Education',
+    'QA': 'Human health activities',
+    'QB': 'Residential care',
+    'R': 'Arts, entertainment and recreation activities',
+    'SA': 'Other service activities',
+    'SB': 'Activities of households as employers of domestic personnel'
+}
+
+# Excluded industries
+excluded_industries = {
+    'Of': 'General government'  # Aggregate containing O, P, QA, QB - avoid double-counting
+}
