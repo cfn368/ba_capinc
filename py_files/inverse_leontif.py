@@ -358,7 +358,7 @@ def fetch_gdp_data(years):
 # ========== ========== ========== ========== ========== ==========
 # 4. Compute timeseries by running above in loop
 # ========== ========== ========== ========== ========== ==========
-def compute_investment_timeseries(NAIO1F, years, kappa=0.6, normalize_by_gdp=True):
+def compute_investment_timeseries(years, kappa=0.6, normalize_by_gdp=True):
     """
     Compute investment composition over multiple years
     
@@ -377,10 +377,10 @@ def compute_investment_timeseries(NAIO1F, years, kappa=0.6, normalize_by_gdp=Tru
     for year in years:
         try:
             # Step 1-7: Leontief analysis
-            year_result = compute_leontief_for_year(NAIO1F, year, var_groups)
+            year_result = compute_leontief_for_year(year)
             
             # Step 8-9: Classify by investment type
-            investment_shares = classify_investment_by_type(year_result, var_groups, kappa)
+            investment_shares = classify_investment_by_type(year_result, kappa)
             results.append(investment_shares)
             
         except Exception as e:
@@ -512,7 +512,7 @@ def plot_investment_composition(investment_timeseries, as_pct_gdp=True):
                frameon=True, loc="upper left")
     
     plt.tight_layout()
-    
+    plt.savefig('0_output/investment_decomposition.png')
     plt.show()
     
     

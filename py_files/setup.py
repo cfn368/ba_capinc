@@ -1,13 +1,15 @@
-# py_files/preamble.py
+# py_files/setup.py
 from __future__ import annotations
 
 # --- stdlib ---
 import math
 from dataclasses import dataclass
 from io import StringIO
+from functools import reduce
 
 # --- third-party ---
 import numpy as np
+from numpy.linalg import inv
 
 try:
     import pandas as pd
@@ -19,6 +21,16 @@ try:
 except Exception:  # optional dependency
     requests = None
 
+try:
+    from IPython.display import display
+except Exception:  # optional dependency
+    display = None
+
+try:
+    from dstapi import DstApi
+except Exception:  # optional dependency
+    DstApi = None
+
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
@@ -28,11 +40,9 @@ from py_files.capinc import CapIncModel
 import py_files.shocks as shocks
 import py_files.build_output_v2 as build_output
 import py_files.var_groups as var_groups
-
-
 import py_files.build_output_single as build_output_single
+import py_files.inverse_leontif as il
 from py_files.capinc_single import CapIncModel_single
-
 
 
 def enable_autoreload(mode: int = 2) -> None:
@@ -55,7 +65,8 @@ def enable_autoreload(mode: int = 2) -> None:
     ip.run_line_magic("autoreload", str(int(mode)))
 
 
-def set_aej():
+def set_aej(**kwargs):
+    """Set matplotlib style for AEJ-style figures."""
     mpl.rcParams.update({
         "font.family": "serif",
         "font.size": 15,
@@ -94,14 +105,14 @@ def setup_notebook(*, autoreload: int = 2, aej: bool = True, **aej_kwargs) -> No
         set_aej(**aej_kwargs)
 
 
-# What you get with: from py_files.preamble import *
+# What you get with: from py_files.setup import *
 __all__ = [
     # functions
     "enable_autoreload", "set_aej", "setup_notebook",
     # common modules/objects
     "np", "pd", "plt", "mticker", "math", "StringIO", "requests",
-    "dataclass",
+    "dataclass", "display", "DstApi", "reduce", "inv",
     # project imports
     "CapIncModel", "shocks", "build_output", "var_groups",
-    'build_output_single', 'CapIncModel_single'
+    "build_output_single", "CapIncModel_single", "il",
 ]
