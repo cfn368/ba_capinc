@@ -458,7 +458,7 @@ def plot_investment_composition(investment_timeseries, as_pct_gdp=True):
     ]
     
     # --- Create figure ---
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6), sharey=True)
+    fig, (ax2, ax1) = plt.subplots(1, 2, figsize=(14, 6), sharey=True)
     
     # Left panel - 4 types
     polys1 = ax1.stackplot(
@@ -481,10 +481,10 @@ def plot_investment_composition(investment_timeseries, as_pct_gdp=True):
     
     # Set appropriate y-axis limits based on normalization
     if as_pct_gdp:
-        ylim_top = min(40, ymax * 1.1)  # Investment typically < 40% of GDP
+        ylim_top = 50
         tick_interval = 5
     else:
-        ylim_top = min(100, ymax * 1.1)  # Shares sum to 100%
+        ylim_top = min(100, ymax * 1.3)  # Shares sum to 100%
         tick_interval = 10
     
     for ax in (ax1, ax2):
@@ -512,7 +512,7 @@ def plot_investment_composition(investment_timeseries, as_pct_gdp=True):
                frameon=True, loc="upper left")
     
     plt.tight_layout()
-    plt.savefig('0_output/investment_decomposition.png')
+    
     plt.show()
     
     

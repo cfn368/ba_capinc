@@ -20,16 +20,15 @@ class CapIncModel_single:
         # self.beta2L     = 0.28  
         
         # DK calib (WIP)
-        self.alphaK     = 1- .253319 - .339977
-        self.alpha1L    = 0.253319 + 0.339977
-        # self.alpha2L    = 0.339977 
-        self.betaK      = 1 - .197807 - .311359
-        self.beta1L     = 0.197807 + 0.311359
-        # self.beta2L     = 0.311359
+        self.alphaK     = 0.36
+        self.alpha1L    = 0.39 + 0.25
+        
+        self.betaK      = 0.26
+        self.beta1L     = 0.46 + 0.28
         
         self.mu1        = 0.26  # labour 1 adjustment cost param
         self.phi1       = 0.3   # labour 1 adjustment cost curvature
-        self.L1         = 1.0   # total labour 1 supply
+        self.L1         = 1.0   
         self.z_last     = np.array([0.0, 0.0, 0.0])
         self._ss        = None
 
