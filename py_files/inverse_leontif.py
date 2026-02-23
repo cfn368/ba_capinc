@@ -501,7 +501,7 @@ def plot_investment_composition(investment_timeseries, as_pct_gdp=True):
     
     # Y-axis label depends on normalization
     ylabel = "Percent of GDP" if as_pct_gdp else "Percent of total investment"
-    ax1.set_ylabel(ylabel)
+    ax2.set_ylabel(ylabel)
     ax1.set_xlabel("Year")
     ax2.set_xlabel("Year")
     
