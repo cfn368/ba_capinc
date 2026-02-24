@@ -16,17 +16,17 @@ def dem_sup_elas(m, tau):
     A_theta = np.array([
     [ 
             vals['sK']/(1-vals['sK']) * (m.alphaK-1) + (m.betaK-1)  ,
-            vals['s1']/(1-vals['s1']) * m.alpha1L + m.beta1L        ,
+            vals['sL']/(1-vals['sL']) * m.alphaL + m.betaL          , 
             1.0
     ]   ,
     [
             vals['sK']/(1-vals['sK']) * m.alphaK + m.betaK          ,
-            vals['s1']/(1-vals['s1']) * (m.alpha1L-(1+m.phi1)/m.phi1)
-            + m.beta1L - (1+m.phi1)/m.phi1                          ,
+            vals['sL']/(1-vals['sL']) * (m.alphaL-(1+m.phi)/m.phi)
+            + m.betaL - (1+m.phi)/m.phi                             ,
             1.0
     ]   ,
     [
-            m.theta*m.betaK, m.theta*m.beta1L, 1.0
+            m.theta*m.betaK, m.theta*m.betaL, 1.0
     ]
     ])
     
@@ -42,13 +42,13 @@ def dem_sup_elas(m, tau):
     # 4. compute demand elasticity
     demand_vec = np.array([
         vals['sK']/(1-vals['sK'])                                   , 
-        -m.alpha1L/(1-m.alphaK) * vals['s1']/(1-vals['s1'])         ,
+        -m.alphaL/(1-m.alphaK) * vals['sL']/(1-vals['sL'])          ,
         0.0
     ])
     epsD = - (-1/(1-m.alphaK) + demand_vec @ x0)
 
     # 5. compute supply elasticity
-    supply_vec = np.array([ m.betaK, m.beta1L, 0.0 ])
+    supply_vec = np.array([ m.betaK, m.betaL, 0.0 ])
     epsS_LR = supply_vec @ x0
     epsS_SR = m.delta * (1 - m.theta) * (supply_vec @ x_theta)
     
@@ -95,17 +95,19 @@ def wr_tax_elas(m, elas_out, phi=None, epsD=None, epsS_LR=None):
     
     # optionally override labor supply elasticity
     if phi is not None:
-        m.phi1 = phi
+        m.phi = phi
 
     # 2. compute effects
     w_C_elas = m.alphaK * _epsS_LR        / ((1 - m.alphaK) * (_epsS_LR + _epsD))
     w_I_elas = (1 + m.betaK * _epsS_LR)   / ((1 - m.alphaK) * (_epsS_LR + _epsD))
-    r_K_elas = 1                           / ((1 - m.alphaK) * (_epsS_LR + _epsD))
+    r_K_elas = 1                          / ((1 - m.alphaK) * (_epsS_LR + _epsD))
+    w_I_breakdown = (m.betaK * _epsS_LR)   / ((1 - m.alphaK) * (_epsS_LR + _epsD))
 
     return {
         'w_C_elas': w_C_elas,
         'w_I_elas': w_I_elas,
         'r_K_elas': r_K_elas,
+        'w_I_breakdown':w_I_breakdown,
     }
     
 

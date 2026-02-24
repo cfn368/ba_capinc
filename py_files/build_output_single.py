@@ -41,21 +41,17 @@ def welfare_effects(m, sim_raw, tau_long, dlog_net_long,
         st_ss = m._static(ss["K"], ss["q"], tau=float(tau_ss))
 
         # SS wage bills and labor (envelope theorem: hold L at baseline optimum)
-        w1C_ss, L1C_ss = float(st_ss["w1C"]), float(st_ss["L1C"])
-        # w2C_ss, L2C_ss = float(st_ss["w2C"]), float(st_ss["L2C"])
-        w1I_ss, L1I_ss = float(st_ss["w1I"]), float(st_ss["L1I"])
-        # w2I_ss, L2I_ss = float(st_ss["w2I"]), float(st_ss["L2I"])
+        wC_ss, LC_ss = float(st_ss["wC"]), float(st_ss["LC"])
+        wI_ss, LI_ss = float(st_ss["wI"]), float(st_ss["LI"])
 
         # 6) FULL-HORIZON welfare paths
         # d log wages vs baseline SS (full horizon)
-        dlog_w1C_full = np.log(np.asarray(sim_full["w1C"], float) / w1C_ss)
-        # dlog_w2C_full = np.log(np.asarray(sim_full["w2C"], float) / w2C_ss)
-        dlog_w1I_full = np.log(np.asarray(sim_full["w1I"], float) / w1I_ss)
-        # dlog_w2I_full = np.log(np.asarray(sim_full["w2I"], float) / w2I_ss)
+        dlog_wC_full = np.log(np.asarray(sim_full["wC"], float) / wC_ss)
+        dlog_wI_full = np.log(np.asarray(sim_full["wI"], float) / wI_ss)
 
         # worker welfare-flow paths (envelope-consistent, SS weights)
-        wg_C_full = (w1C_ss * L1C_ss) * dlog_w1C_full # + (w2C_ss * L2C_ss) * dlog_w2C_full
-        wg_I_full = (w1I_ss * L1I_ss) * dlog_w1I_full # + (w2I_ss * L2I_ss) * dlog_w2I_full
+        wg_C_full = (wC_ss * LC_ss) * dlog_wC_full 
+        wg_I_full = (wI_ss * LI_ss) * dlog_wI_full 
         wg_L_full = wg_C_full + wg_I_full
 
         # net-of-tax log change (FULL). You can ignore dlog_net_long input here to avoid mismatch bugs.
@@ -67,7 +63,7 @@ def welfare_effects(m, sim_raw, tau_long, dlog_net_long,
         pI_ss = float(st_ss["pI"])
         I_ss  = float(st_ss["I"])
         Y_ss  = C_ss + pI_ss * I_ss
-        WB_ss = w1C_ss * L1C_ss + w1I_ss * L1I_ss # + w2C_ss * L2C_ss + w2I_ss * L2I_ss
+        WB_ss = wC_ss * LC_ss + wI_ss * LI_ss 
         D_ss  = (1.0 - float(tau_ss)) * (Y_ss - WB_ss)   # scalar
 
         WG_total_full = D_ss * dlog_net_full 
@@ -202,26 +198,17 @@ def inc_elas(m, sim, tau):
         A_theta = np.array([
         [ 
                 vals['sK']/(1-vals['sK']) * (m.alphaK-1) + (m.betaK-1)  ,
-                vals['s1']/(1-vals['s1']) * m.alpha1L + m.beta1L        ,
-                # vals['s2']/(1-vals['s2']) * m.alpha2L + m.beta2L        , 
+                vals['sL']/(1-vals['sL']) * m.alphaL + m.betaL          ,
                 1.0
         ]   ,
         [
                 vals['sK']/(1-vals['sK']) * m.alphaK + m.betaK          ,
-                vals['s1']/(1-vals['s1']) * (m.alpha1L-(1+m.phi1)/m.phi1)
-                + m.beta1L - (1+m.phi1)/m.phi1                          ,
-                # vals['s2']/(1-vals['s2']) * m.alpha2L + m.beta2L        , 
+                vals['sL']/(1-vals['sL']) * (m.alphaL-(1+m.phi)/m.phi)
+                + m.betaL - (1+m.phi)/m.phi                             ,
                 1.0
         ]   ,
-        # [
-                # vals['sK']/(1-vals['sK']) * m.alphaK + m.betaK          ,
-                # vals['s1']/(1-vals['s1']) * m.alpha1L + m.beta1L        ,
-                # vals['s2']/(1-vals['s2']) * (m.alpha2L-(1+m.phi2)/m.phi2)
-                # + m.beta2L - (1+m.phi2)/m.phi2                          ,
-        #         1.0
-        # ]   ,
         [
-                m.theta*m.betaK, m.theta*m.beta1L, 1.0
+                m.theta*m.betaK, m.theta*m.betaL, 1.0
         ]
         ])
 
@@ -233,11 +220,10 @@ def inc_elas(m, sim, tau):
         x_theta = np.linalg.solve(A_theta, b)
         x0      = np.linalg.solve(A0, b)
 
-        supply_vec = np.array([ m.betaK, m.beta1L, 0.0 ])
+        supply_vec = np.array([ m.betaK, m.betaL, 0.0 ])
         demand_vec = np.array([
         vals['sK']/(1-vals['sK'])                                   , 
-        -m.alpha1L/(1-m.alphaK) * vals['s1']/(1-vals['s1'])         ,
-        # -m.alpha2L/(1-m.alphaK) * vals['s2']/(1-vals['s2'])         , 
+        -m.alphaL/(1-m.alphaK) * vals['sL']/(1-vals['sL'])              ,
         0.0
         ])
 

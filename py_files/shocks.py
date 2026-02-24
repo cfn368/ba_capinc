@@ -65,42 +65,41 @@ def perm_tc(T=25, tau0=0.32, tauT=0.22, rho=0.7, tail=50):
 # 3. permanent tax cut (empirical)
 ###########################################################
 
+# def perm_tc_emp(tail=50, normalized=True):
 
-def perm_tc_emp(tail=50, normalized=True):
+#     # 1. 25 year of data available, fetch
+#     url = (
+#         "https://sdmx.oecd.org/public/rest/data/"
+#         "OECD.CTP.TPS,DSD_TAX_CIT@DF_CIT,1.0/"
+#         "DNK.A..ST..S13+S1311+S13M.."
+#         "?startPeriod=2000&endPeriod=2025"
+#         "&dimensionAtObservation=AllDimensions"
+#         "&format=csvfilewithlabels"
+#     )
 
-    # 1. 25 year of data available, fetch
-    url = (
-        "https://sdmx.oecd.org/public/rest/data/"
-        "OECD.CTP.TPS,DSD_TAX_CIT@DF_CIT,1.0/"
-        "DNK.A..ST..S13+S1311+S13M.."
-        "?startPeriod=2000&endPeriod=2025"
-        "&dimensionAtObservation=AllDimensions"
-        "&format=csvfilewithlabels"
-    )
+#     r = requests.get(url)
 
-    r = requests.get(url)
+#     r.raise_for_status()
+#     df = pd.read_csv(StringIO(r.text))
 
-    r.raise_for_status()
-    df = pd.read_csv(StringIO(r.text))
-
-    # 2. keep only the statutory CIT rate
-    df_cit = (df.loc[df["MEASURE"] == "CIT", ["TIME_PERIOD", "OBS_VALUE"]]
-                .rename(columns={"TIME_PERIOD": "year", "OBS_VALUE": "cit_rate"})
-                .assign(year=lambda x: x["year"].astype(int))
-                .sort_values("year")
-                .reset_index(drop=True))
+#     # 2. keep only the statutory CIT rate
+#     df_cit = (df.loc[df["MEASURE"] == "CIT", ["TIME_PERIOD", "OBS_VALUE"]]
+#                 .rename(columns={"TIME_PERIOD": "year", "OBS_VALUE": "cit_rate"})
+#                 .assign(year=lambda x: x["year"].astype(int))
+#                 .sort_values("year")
+#                 .reset_index(drop=True))
     
-    # 3. make output consistent
-    cit_pct = df_cit["cit_rate"].to_numpy(dtype=float) 
-    tau_raw = cit_pct / 100.0 
-    tau_t = np.concatenate([tau_raw, np.full(tail, tau_raw[-1])])
+#     # 3. make output consistent
+#     cit_pct = df_cit["cit_rate"].to_numpy(dtype=float) 
+#     tau_raw = cit_pct / 100.0 
+#     tau_t = np.concatenate([tau_raw, np.full(tail, tau_raw[-1])])
 
-    if normalized:
-        tau_t -= 0.32
+#     if normalized:
+#         tau_t -= 0.32
 
-    net_t = 1.0 - tau_t
-    net0 = net_t[0]
-    dlog = np.log(net_t / net0)
-    tauT = tau_t[-1]
+#     net_t = 1.0 - tau_t
+#     net0 = net_t[0]
+#     dlog = np.log(net_t / net0)
+#     tauT = tau_t[-1]
 
-    return net_t, tau_t, dlog, tauT
+#     return net_t, tau_t, dlog, tauT

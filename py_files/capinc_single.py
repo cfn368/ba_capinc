@@ -20,15 +20,15 @@ class CapIncModel_single:
         # self.beta2L     = 0.28  
         
         # DK calib (WIP)
-        self.alphaK     = 0.36
-        self.alpha1L    = 0.39 + 0.25
+        self.alphaL     = 0.6060    # 6107
+        self.alphaK     = 1- self.alphaL
         
-        self.betaK      = 0.26
-        self.beta1L     = 0.46 + 0.28
+        self.betaL      = 0.6537    # 0.5131 0.6681
+        self.betaK      = 1 - self.betaL
         
-        self.mu1        = 0.26  # labour 1 adjustment cost param
-        self.phi1       = 0.3   # labour 1 adjustment cost curvature
-        self.L1         = 1.0   
+        self.mu         = 0.26  # labour 1 adjustment cost param
+        self.phi        = 0.6   # labour 1 adjustment cost curvature
+        self.L          = 1.0   
         self.z_last     = np.array([0.0, 0.0, 0.0])
         self._ss        = None
 
@@ -39,7 +39,7 @@ class CapIncModel_single:
         return (1 - self.delta) * K + (K ** self.theta) * (I ** (1 - self.theta))
 
     # ========== ========== ========== ========== ==========
-    # 3. static block: solve (sK,s1,s2,pI) given (K,q,τ)
+    # 3. static block: solve (sK,sL,pI) given (K,q,τ)
     def static_block_sigmoid(self, K, q, tau, z0=(0.0, 0.0, 0.0)):
 
         # 3.1 map unconstrained z to shares in (0,1)
@@ -47,72 +47,72 @@ class CapIncModel_single:
             return 1.0 / (1.0 + np.exp(-z))
 
         # 3.2 parameters (local names = shorter formulas)
-        L1 = self.L1
-        aK, a1 = self.alphaK, self.alpha1L
-        bK, b1 = self.betaK, self.beta1L
-        mu1, phi1 = self.mu1, self.phi1
+        L = self.L
+        aK, aL = self.alphaK, self.alphaL
+        bK, bL = self.betaK, self.betaL
+        mu, phi = self.mu, self.phi
         theta = self.theta
 
         def F(z):
             # 3.3 unknowns: shares + log price (pI>0)
-            zK, z1, u = z
-            sK = sigmoid(zK); s1 = sigmoid(z1) 
+            zK, zL, u = z
+            sK = sigmoid(zK); sL = sigmoid(zL) 
             pI = np.exp(u)
 
             # 3.4 sectoral allocations implied by shares
-            KC, KI   = (1 - sK) * K,  sK * K
-            L1C, L1I = (1 - s1) * L1, s1 * L1
+            KC, KI = (1 - sK) * K,  sK * K
+            LC, LI = (1 - sL) * L, sL * L
 
             # 3.5 outputs (C-sector numeraire; I-sector value uses pI)
-            C = (KC**aK) * (L1C**a1) 
-            I = (KI**bK) * (L1I**b1) 
+            C = (KC**aK) * (LC**aL) 
+            I = (KI**bK) * (LI**bL) 
 
             # 3.6 marginal products / factor prices by Cobb–Douglas
-            w1C = a1 * C / L1C
-            w1I = b1 * pI * I / L1I
+            wC = aL * C / LC
+            wI = bL * pI * I / LI
 
             rC = aK * C / KC        
             rI = bK * pI * I / KI   
 
             # 3.7 equilibrium conditions
             eq1 = rC - rI
-            eq2 = (L1C / L1I) - ((1 - mu1) / mu1) * (w1C / w1I) ** phi1
+            eq2 = (LC / LI) - ((1 - mu) / mu) * (wC / wI) ** phi
 
             # 3.8 pin down pI via the I/K target implied by (q,pI,θ)
             target_I_over_K = (1 - theta) ** (1 / theta) * (q / pI) ** (1 / theta)
-            eq4 = (I / K) - target_I_over_K
+            eq3 = (I / K) - target_I_over_K
 
-            return np.array([eq1, eq2, eq4], float)
+            return np.array([eq1, eq2, eq3], float)
 
         # 3.9 solve static system (warm-start with z0)
         sol = root(F, np.array(z0, float), method="hybr")
         res = F(sol.x)
 
         # 3.10 decode solution and recompute objects cleanly
-        zK, z1, u = sol.x
-        sK, s1 = sigmoid(zK), sigmoid(z1)
+        zK, zL, u = sol.x
+        sK, sL = sigmoid(zK), sigmoid(zL)
         pI = float(np.exp(u))
 
         KC, KI   = (1 - sK) * K,  sK * K
-        L1C, L1I = (1 - s1) * L1, s1 * L1
-        C = (KC**aK) * (L1C**a1) 
-        I = (KI**bK) * (L1I**b1) 
-        w1C = a1 * C / L1C
-        w1I = b1 * pI * I / L1I
+        LC, LI = (1 - sL) * L, sL * L
+        C = (KC**aK) * (LC**aL) 
+        I = (KI**bK) * (LI**bL) 
+        wC = aL * C / LC
+        wI = bL * pI * I / LI
 
         # 3.11 gross MPK in C-sector (before tax); tax enters only in Euler later
         rC_gross = aK * C / KC
 
         return {
-            "sK": sK, "s1": s1, "pI": pI,
+            "sK": sK, "sL": sL, "pI": pI,
             "C": C, "I": I, "rC_gross": rC_gross,
             "success": sol.success, "message": sol.message,
             "z_sol": sol.x,
             "residuals": res,
             "max_abs_resid": float(np.max(np.abs(res))),
-            "mins": {"KC": KC, "KI": KI, "L1C": L1C, "L1I": L1I},
-            "w1C": w1C, "w1I": w1I,
-            "L1C": L1C, "L1I": L1I
+            "mins": {"KC": KC, "KI": KI, "LC": LC, "LI": LI},
+            "wC": wC, "wI": wI,
+            "LC": LC, "LI": LI
         } 
 
     # 4.12 thin wrapper: (i) warm-start with last z, (ii) fail fast if solver fails
@@ -163,7 +163,7 @@ class CapIncModel_single:
 
         ss = {
             "K": K_ss, "q": q_ss, "pI": st["pI"], "I": st["I"], "C": st["C"],
-            "sK": st["sK"], "s1": st["s1"], "rC_gross": st["rC_gross"],
+            "sK": st["sK"], "sL": st["sL"], "rC_gross": st["rC_gross"],
             "tau": tau,                     
         }
         self._ss = ss
@@ -181,10 +181,11 @@ class CapIncModel_single:
         C  = np.empty(T + 1)
         rC = np.empty(T + 1)
         sK = np.empty(T + 1)
-        s1 = np.empty(T + 1)
-        w1C = np.empty(T + 1) 
-        w1I = np.empty(T + 1) 
-        L1C = np.empty(T + 1); L1I = np.empty(T + 1)
+        sL = np.empty(T + 1)
+        wC = np.empty(T + 1) 
+        wI = np.empty(T + 1) 
+        LC = np.empty(T + 1)
+        LI = np.empty(T + 1)
 
         # 6.2 initial condition
         K[0] = K0
@@ -199,20 +200,22 @@ class CapIncModel_single:
             I[t]  = st["I"]
             C[t]  = st["C"]
             rC[t] = st["rC_gross"]
-            sK[t] = st["sK"]; s1[t] = st["s1"] 
+            sK[t] = st["sK"]
+            sL[t] = st["sL"] 
             
-            w1C[t] = st["w1C"]
-            w1I[t] = st["w1I"]
-            L1C[t] = st["L1C"]; L1I[t] = st["L1I"]
+            wC[t] = st["wC"]
+            wI[t] = st["wI"]
+            LC[t] = st["LC"]
+            LI[t] = st["LI"]
 
             # 6.5 update capital using the law of motion
             if t < T:
                 K[t + 1] = self.next_K(K[t], I[t])
 
         return {"K": K, "q": q_path, "pI": pI, "I": I, "C": C, "rC_gross": rC,
-                "sK": sK, "s1": s1,
-                "w1C": w1C, "w1I": w1I,
-                "L1C": L1C, "L1I": L1I}
+                "sK": sK, "sL": sL,
+                "wC": wC, "wI": wI,
+                "LC": LC, "LI": LI}
 
 
     # ========== ========== ========== ========== ==========
@@ -275,25 +278,25 @@ class CapIncModel_single:
 
 
     # ========== ========== ========== ========== ========== 
-    # Calibrate (mu1, phi1)
+    # Calibrate (mu, phi)
     #  - enforce zero SS wage premia
     #  - match investment-sector labor supply elasticities:
-    #       (1 - s1)*phi1 = target_elas1
+    #       (1 - sL)*phi = target_elas
     def calibrate(
         self,
         *,
         tau=0.0,
         K_guess=1.0,
         q_guess=1.0,
-        target_elas1=1.0,
+        target_elas=1.0,
         clip=1e-10,
         verbose=True,
     ):
         tau = float(tau)
 
         # keep old values in case something fails
-        mu1_old = float(self.mu1)
-        phi1_old = float(self.phi1)
+        mu_old = float(self.mu)
+        phi_old = float(self.phi)
 
         def _sigmoid(z):
             return 1.0 / (1.0 + np.exp(-z))
@@ -309,35 +312,34 @@ class CapIncModel_single:
                 K=ss["K"], q=ss["q"], tau=tau, z0=(0.0, 0.0, 0.0)
             )
 
-            prem1 = float(np.log(st["w1I"] / st["w1C"]))
+            prem = float(np.log(st["wI"] / st["wC"]))
 
             # implied investment-sector labor supply elasticities
-            s1 = float(st["s1"]) 
-            eps1 = (1.0 - s1) * float(self.phi1)
+            sL = float(st["sL"]) 
+            eps = (1.0 - sL) * float(self.phi)
 
-            return ss, st, prem1, eps1
+            return ss, st, prem, eps
 
         try:
-            # unknowns: z = [logit(mu1), logit(mu2), log(phi1), log(phi2)]
+            # unknowns: z = [logit(mu), log(phi)]
             z0 = np.array(
                 [
-                    _logit(mu1_old),
-                    np.log(max(phi1_old, 1e-12)),
+                    _logit(mu_old),
+                    np.log(max(phi_old, 1e-12)),
                 ],
                 float,
             )
 
             def H(z):
-                self.mu1 = _sigmoid(z[0])
-                self.phi1 = float(np.exp(z[1]))
-                # self.phi2 = float(np.ep(z[3]))
+                self.mu = _sigmoid(z[0])
+                self.phi = float(np.exp(z[1]))
 
-                _, _, prem1, eps1 = _premia_and_elas()
+                _, _, prem, eps = _premia_and_elas()
 
                 return np.array(
                     [
-                        prem1,                      # = 0
-                        eps1 - float(target_elas1), # = 0
+                        prem,                      # = 0
+                        eps - float(target_elas), # = 0
                     ],
                     float,
                 )
@@ -347,50 +349,50 @@ class CapIncModel_single:
                 raise RuntimeError(sol.message)
 
             # decode solution cleanly
-            self.mu1 = _sigmoid(sol.x[0])
-            self.phi1 = float(np.exp(sol.x[1]))
+            self.mu = _sigmoid(sol.x[0])
+            self.phi = float(np.exp(sol.x[1]))
 
-            ss, st, prem1, eps1 = _premia_and_elas()
+            ss, st, prem, eps = _premia_and_elas()
 
             if verbose:
                 # implied by old params (restore temporarily)
-                self.mu1, self.phi1= mu1_old, phi1_old
-                _, _, prem1_old, eps1_old = _premia_and_elas()
+                self.mu, self.phi = mu_old, phi_old
+                _, _, prem_old, eps_old = _premia_and_elas()
 
                 # restore new
-                self.mu1 = _sigmoid(sol.x[0])
-                self.phi1 = float(np.exp(sol.x[1]))
+                self.mu = _sigmoid(sol.x[0])
+                self.phi = float(np.exp(sol.x[1]))
 
                 print("\n" + "=" * 60)
                 print(" Calibrate household: zero wage premia + target eps_nI ")
                 print("=" * 60)
-                print(f"{'targets':<10} prem1=0, prem2=0, eps1={target_elas1:.1f}")
+                print(f"{'targets':<10} prem=0, prem=0, eps={target_elas:.1f}")
                 print("-" * 60)
-                print(f"{'old':<10} mu1={mu1_old:.2f}   =>")
-                print(f"{'':<10} log(w1I/w1C)={prem1_old:+.2e}\n")
+                print(f"{'old':<10} mu={mu_old:.2f}   =>")
+                print(f"{'':<10} log(wI/wC)={prem_old:+.2e}\n")
 
-                print(f"{'old':<10} phi1={phi1_old:.2f} =>")
-                print(f"{'':<10} eps1={eps1_old:.3f}")
+                print(f"{'old':<10} phi={phi_old:.2f} =>")
+                print(f"{'':<10} eps={eps_old:.3f}")
                 print("-" * 60)
-                print(f"{'new':<10} mu1={float(self.mu1):.4f}   =>")
-                print(f"{'':<10} log(w1I/w1C)={prem1:+.2e}\n")
+                print(f"{'new':<10} mu={float(self.mu):.4f}   =>")
+                print(f"{'':<10} log(wI/wC)={prem:+.2e}\n")
                 
-                print(f"{'new':<10} phi1={float(self.phi1):.4f} =>")
-                print(f"{'':<10} eps1={eps1:.3f}")
+                print(f"{'new':<10} phi={float(self.phi):.4f} =>")
+                print(f"{'':<10} eps={eps:.3f}")
 
                 print("=" * 60 + "\n")
 
             return {
-                "mu1": float(self.mu1),
-                "phi1": float(self.phi1),
-                "prem1_log_wI_wC": prem1,
-                "eps1_I": float(eps1),
+                "mu": float(self.mu),
+                "phi": float(self.phi),
+                "prem_log_wI_wC": prem,
+                "eps_I": float(eps),
                 "ss": ss,
                 "static_at_ss": st,
                 "success": True,
             }
 
         except Exception as e:
-            self.mu1, self.phi1 = mu1_old, phi1_old
+            self.mu, self.phi = mu_old, phi_old
             raise RuntimeError(f"household calibration failed: {e}")
 

@@ -22,6 +22,12 @@ model_var = {
     'w2C':      r'$w_{2C}$',
     'w1I':      r'$w_{I}$',
     'w2I':      r'$w_{2I}$',
+    
+    'wC':       r'$w_{C}$',
+    'wI':       r'$w_{I}$',
+    'sL':       r'$s_{L}$',
+    'LC':       r'$L_{C}$',
+    'LI':       r'$L_{I}$',
 }
 
 def panels(gamma): 
@@ -299,6 +305,12 @@ subs = pd.Index([
     'SB Activities of households as employers of domestic personnel'
 ])
 
+# LIKE GGB
+# Excluded industries
+excluded_industries = {
+    'Of': 'General government'  # Aggregate containing O, P, QA, QB - avoid double-counting
+}
+
 # Investment sector (capital-producing industries)
 investment_industries = {
     'CC': 'Wood and paper products and printing',  
@@ -345,7 +357,37 @@ consumption_industries = {
     'SB': 'Activities of households as employers of domestic personnel'
 }
 
-# Excluded industries
-excluded_industries = {
-    'Of': 'General government'  # Aggregate containing O, P, QA, QB - avoid double-counting
-}
+# AGG ABOVE 50
+investment_industries2 = investment_industries.copy()
+del investment_industries2['CE']
+del investment_industries2['JC']
+del investment_industries2['MA']
+del investment_industries2['CF'] 
+
+consumption_industries2 = consumption_industries.copy()
+consumption_industries2['CE'] = 'Manufacture of chemicals'
+consumption_industries2['JC'] = 'IT and information service activities'
+consumption_industries2['MA'] = 'Consultancy etc.'
+
+# TOP 10
+investment_industries3 = investment_industries2.copy()
+
+consumption_industries3 = consumption_industries.copy()
+del consumption_industries3['E']
+del consumption_industries3['R']
+del consumption_industries3['P']
+del consumption_industries3['D']
+del consumption_industries3['JB']
+del consumption_industries3['CD']
+del consumption_industries3['H']
+del consumption_industries3['N']
+del consumption_industries3['CB']
+del consumption_industries3['MC']
+del consumption_industries3['CL']
+del consumption_industries3['LA']
+del consumption_industries3['G']
+del consumption_industries3['JA']
+
+# NO PHARMA
+investment_industries4 = investment_industries.copy()
+del investment_industries4['CF']
