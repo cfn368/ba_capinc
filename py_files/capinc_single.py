@@ -56,23 +56,20 @@ class CapIncModel_single:
         def F(z):
             # 3.3 unknowns: shares + log price (pI>0)
             zK, z1, u = z
-            sK = sigmoid(zK); s1 = sigmoid(z1) #; s2 = sigmoid(z2)
+            sK = sigmoid(zK); s1 = sigmoid(z1) 
             pI = np.exp(u)
 
             # 3.4 sectoral allocations implied by shares
             KC, KI   = (1 - sK) * K,  sK * K
             L1C, L1I = (1 - s1) * L1, s1 * L1
-            # L2C, L2I = (1 - s2) * L2, s2 * L2 
 
             # 3.5 outputs (C-sector numeraire; I-sector value uses pI)
-            C = (KC**aK) * (L1C**a1) # * (L2C**a2)
-            I = (KI**bK) * (L1I**b1) #b* (L2I**b2)
+            C = (KC**aK) * (L1C**a1) 
+            I = (KI**bK) * (L1I**b1) 
 
             # 3.6 marginal products / factor prices by Cobb–Douglas
             w1C = a1 * C / L1C
-            # w2C = a2 * C / L2C 
             w1I = b1 * pI * I / L1I
-            # w2I = b2 * pI * I / L2I
 
             rC = aK * C / KC        
             rI = bK * pI * I / KI   
@@ -80,7 +77,6 @@ class CapIncModel_single:
             # 3.7 equilibrium conditions
             eq1 = rC - rI
             eq2 = (L1C / L1I) - ((1 - mu1) / mu1) * (w1C / w1I) ** phi1
-            # eq3 = (L2C / L2I) - ((1 - mu2) / mu2) * (w2C / w2I) ** phi2
 
             # 3.8 pin down pI via the I/K target implied by (q,pI,θ)
             target_I_over_K = (1 - theta) ** (1 / theta) * (q / pI) ** (1 / theta)
@@ -99,13 +95,10 @@ class CapIncModel_single:
 
         KC, KI   = (1 - sK) * K,  sK * K
         L1C, L1I = (1 - s1) * L1, s1 * L1
-        # L2C, L2I = (1 - s2) * L2, s2 * L2
-        C = (KC**aK) * (L1C**a1) # * (L2C**a2)
-        I = (KI**bK) * (L1I**b1) # * (L2I**b2)
+        C = (KC**aK) * (L1C**a1) 
+        I = (KI**bK) * (L1I**b1) 
         w1C = a1 * C / L1C
-        # w2C = a2 * C / L2C
         w1I = b1 * pI * I / L1I
-        # w2I = b2 * pI * I / L2I
 
         # 3.11 gross MPK in C-sector (before tax); tax enters only in Euler later
         rC_gross = aK * C / KC
@@ -146,7 +139,7 @@ class CapIncModel_single:
             # reset warm-start so SS solve does not depend on previous path calls
             z0_old = self.z_last.copy()
             self.z_last[:] = 0.0
-            st = self._static(K, q, tau=tau)   # <-- changed
+            st = self._static(K, q, tau=tau) 
             self.z_last = z0_old
 
             I = st["I"]
@@ -166,7 +159,7 @@ class CapIncModel_single:
 
         # store SS objects (also resets warm-start for a clean evaluation)
         self.z_last[:] = 0.0
-        st = self._static(K_ss, q_ss, tau=tau)  # <-- changed
+        st = self._static(K_ss, q_ss, tau=tau)
 
         ss = {
             "K": K_ss, "q": q_ss, "pI": st["pI"], "I": st["I"], "C": st["C"],
@@ -189,11 +182,9 @@ class CapIncModel_single:
         rC = np.empty(T + 1)
         sK = np.empty(T + 1)
         s1 = np.empty(T + 1)
-        # s2 = np.empty(T + 1)
-        w1C = np.empty(T + 1) # ; w2C = np.empty(T + 1)
-        w1I = np.empty(T + 1) # ; w2I = np.empty(T + 1)
+        w1C = np.empty(T + 1) 
+        w1I = np.empty(T + 1) 
         L1C = np.empty(T + 1); L1I = np.empty(T + 1)
-        # L2C = np.empty(T + 1); L2I = np.empty(T + 1)
 
         # 6.2 initial condition
         K[0] = K0
@@ -208,12 +199,11 @@ class CapIncModel_single:
             I[t]  = st["I"]
             C[t]  = st["C"]
             rC[t] = st["rC_gross"]
-            sK[t] = st["sK"]; s1[t] = st["s1"] #; s2[t] = st["s2"]
+            sK[t] = st["sK"]; s1[t] = st["s1"] 
             
-            w1C[t] = st["w1C"] # ; w2C[t] = st["w2C"]
-            w1I[t] = st["w1I"] # ; w2I[t] = st["w2I"]
+            w1C[t] = st["w1C"]
+            w1I[t] = st["w1I"]
             L1C[t] = st["L1C"]; L1I[t] = st["L1I"]
-            # L2C[t] = st["L2C"]; L2I[t] = st["L2I"]
 
             # 6.5 update capital using the law of motion
             if t < T:
@@ -285,11 +275,10 @@ class CapIncModel_single:
 
 
     # ========== ========== ========== ========== ========== 
-    # Calibrate (mu1, mu2, phi1, phi2)
+    # Calibrate (mu1, phi1)
     #  - enforce zero SS wage premia
     #  - match investment-sector labor supply elasticities:
     #       (1 - s1)*phi1 = target_elas1
-    #       (1 - s2)*phi2 = target_elas2
     def calibrate(
         self,
         *,
@@ -297,7 +286,6 @@ class CapIncModel_single:
         K_guess=1.0,
         q_guess=1.0,
         target_elas1=1.0,
-        # target_elas2=0.3,
         clip=1e-10,
         verbose=True,
     ):
@@ -322,13 +310,10 @@ class CapIncModel_single:
             )
 
             prem1 = float(np.log(st["w1I"] / st["w1C"]))
-            # prem2 = float(np.log(st["w2I"] / st["w2C"]))
 
             # implied investment-sector labor supply elasticities
-            # eps_nI = (1 - s_n) * phi_n
             s1 = float(st["s1"]) 
             eps1 = (1.0 - s1) * float(self.phi1)
-            # eps2 = (1.0 - s2) * float(self.phi2)
 
             return ss, st, prem1, eps1
 
@@ -337,27 +322,22 @@ class CapIncModel_single:
             z0 = np.array(
                 [
                     _logit(mu1_old),
-                    # _logit(mu2_old),
                     np.log(max(phi1_old, 1e-12)),
-                    # np.log(max(phi2_old, 1e-12)),
                 ],
                 float,
             )
 
             def H(z):
                 self.mu1 = _sigmoid(z[0])
-                # self.mu2 = _sigmoid(z[1])
                 self.phi1 = float(np.exp(z[1]))
-                # self.phi2 = float(np.exp(z[3]))
+                # self.phi2 = float(np.ep(z[3]))
 
                 _, _, prem1, eps1 = _premia_and_elas()
 
                 return np.array(
                     [
                         prem1,                      # = 0
-                        # prem2,                      # = 0
                         eps1 - float(target_elas1), # = 0
-                        # eps2 - float(target_elas2), # = 0
                     ],
                     float,
                 )
@@ -368,9 +348,7 @@ class CapIncModel_single:
 
             # decode solution cleanly
             self.mu1 = _sigmoid(sol.x[0])
-            # self.mu2 = _sigmoid(sol.x[1])
             self.phi1 = float(np.exp(sol.x[1]))
-            # self.phi2 = float(np.exp(sol.x[3]))
 
             ss, st, prem1, eps1 = _premia_and_elas()
 
@@ -381,9 +359,7 @@ class CapIncModel_single:
 
                 # restore new
                 self.mu1 = _sigmoid(sol.x[0])
-                # self.mu2 = _sigmoid(sol.x[1])
                 self.phi1 = float(np.exp(sol.x[1]))
-                # self.phi2 = float(np.exp(sol.x[3]))
 
                 print("\n" + "=" * 60)
                 print(" Calibrate household: zero wage premia + target eps_nI ")
@@ -406,13 +382,9 @@ class CapIncModel_single:
 
             return {
                 "mu1": float(self.mu1),
-                # "mu2": float(self.mu2),
                 "phi1": float(self.phi1),
-                # "phi2": float(self.phi2),
                 "prem1_log_wI_wC": prem1,
-                # "prem2_log_wI_wC": prem2,
                 "eps1_I": float(eps1),
-                # "eps2_I": float(eps2),
                 "ss": ss,
                 "static_at_ss": st,
                 "success": True,

@@ -107,3 +107,22 @@ def wr_tax_elas(m, elas_out, phi=None, epsD=None, epsS_LR=None):
         'w_I_elas': w_I_elas,
         'r_K_elas': r_K_elas,
     }
+    
+
+# ========== ========== ========== ========== ========== 
+# 4. welfare shares
+
+def welfare_incidence(sim):
+
+    # 1. tax incidence 
+    consump_w = sim["table"]["pv_wg_C"] / sim["table"]["pv_WG"]
+    investm_w = sim["table"]["pv_wg_I"] / sim["table"]["pv_WG"]
+    capital_o = sim["table"]["pv_wg_K"] / sim["table"]["pv_WG"]
+        
+    return {
+        'consump_w': consump_w,
+        'investm_w': investm_w,
+        'capital_o': capital_o,
+    }
+    
+    
