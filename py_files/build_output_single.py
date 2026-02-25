@@ -113,7 +113,7 @@ def welfare_effects(m, sim_raw, tau_long, dlog_net_long,
         sim["table"] = table  
 
         # 10) plot
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6), constrained_layout=True)
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4), constrained_layout=True)
 
         ax1.plot(h, dq,  color='k', ls="-", lw=2, label="value of installed capital $q$")
         ax1.plot(h, dpI, color='k', ls=":", lw=2, label="price of capital good $p_I$")
@@ -128,13 +128,15 @@ def welfare_effects(m, sim_raw, tau_long, dlog_net_long,
         ax2.plot(h, wC_pct, lw=2, label="consumption sector workers", color="k")
         ax2.plot(h, wI_pct, lw=2, label="investment sector workers",  color="#00B8D9")
         ax2.plot(h, wK_pct, lw=2, label="capitalists",                color="crimson")
-        ax2.plot(h, WG_pct, lw=2, label="Total wealth gain",          color="gray", ls=":")
+        # ax2.plot(h, WG_pct, lw=2, label="Total wealth gain",          color="gray", ls=":")
         ax2.axhline(0, color="k", ls=":", lw=1, alpha=0.6)
         ax2.set_xlabel("horizon")
         ax2.set_ylabel("welfare gain / consumption (%)")
         ax2.set_title("(b) Welfare effects")
         ax2.legend(frameon=True)
         ax2.grid(True, which="both", linestyle="--", alpha=0.5)
+
+        plt.savefig('0_output/sim_lr.png', dpi=200)
 
         return fig, (ax1, ax2), ss, sim
 

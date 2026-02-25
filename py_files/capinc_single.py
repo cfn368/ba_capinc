@@ -27,7 +27,7 @@ class CapIncModel_single:
         self.betaK      = 1 - self.betaL
         
         self.mu         = 0.26  # labour 1 adjustment cost param
-        self.phi        = 0.6   # labour 1 adjustment cost curvature
+        self.phi        = 0.75  # labour 1 adjustment cost curvature
         self.L          = 1.0   
         self.z_last     = np.array([0.0, 0.0, 0.0])
         self._ss        = None

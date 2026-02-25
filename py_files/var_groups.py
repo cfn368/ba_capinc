@@ -315,8 +315,7 @@ excluded_industries = {
 investment_industries = {
     'CC': 'Wood and paper products and printing',  
     'CG': 'Manufacture of plastic, glass and concrete',
-    'CE': 'Manufacture of chemicals',
-    'CF': 'Pharmaceuticals',  # 95.8% intangible investment (Denmark-specific)
+    'CF': 'Pharmaceuticals',
     'CH': 'Basic metals and fabricated metal products',
     'CI': 'Manufacture of electronic components',
     'CJ': 'Electrical equipment',
@@ -335,6 +334,7 @@ consumption_industries = {
     'CA': 'Manufacture of food products, beverages and tobacco',
     'CB': 'Textiles and leather products',
     'CD': 'Oil refinery etc.', 
+    'CE': 'Manufacture of chemicals',
     'CL': 'Transport equipment',
     'D': 'Electricity, gas, steam and air conditioning supply',
     'E': 'Water supply, sewerage and waste management',
@@ -357,12 +357,11 @@ consumption_industries = {
     'SB': 'Activities of households as employers of domestic personnel'
 }
 
-# AGG ABOVE 50
+# AGG ABOVE for direct
 investment_industries2 = investment_industries.copy()
-del investment_industries2['CE']
-del investment_industries2['JC']
-del investment_industries2['MA']
-del investment_industries2['CF'] 
+del investment_industries2['CC']
+investment_industries2['JC'] = 'IT and information service activities'
+investment_industries2['MA'] = 'Consultancy etc.'
 
 consumption_industries2 = consumption_industries.copy()
 consumption_industries2['CE'] = 'Manufacture of chemicals'
@@ -371,6 +370,7 @@ consumption_industries2['MA'] = 'Consultancy etc.'
 
 # TOP 10
 investment_industries3 = investment_industries2.copy()
+del investment_industries2['CF'] 
 
 consumption_industries3 = consumption_industries.copy()
 del consumption_industries3['E']

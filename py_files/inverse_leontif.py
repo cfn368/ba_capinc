@@ -458,7 +458,7 @@ def plot_investment_composition(investment_timeseries, as_pct_gdp=True):
     ]
     
     # --- Create figure ---
-    fig, (ax2, ax1) = plt.subplots(1, 2, figsize=(14, 6), sharey=True)
+    fig, (ax2, ax1) = plt.subplots(1, 2, figsize=(12, 6), sharey=True)
     
     # Left panel - 4 types
     polys1 = ax1.stackplot(
@@ -496,7 +496,7 @@ def plot_investment_composition(investment_timeseries, as_pct_gdp=True):
         ax.grid(True, which="both", linestyle="--", alpha=0.3, linewidth=0.5)
     
     # Titles and labels
-    ax1.set_title("Types of investment expenditures as a fraction of GDP", pad=15)
+    ax1.set_title("Four aggregate capital types", pad=15)
     ax2.set_title("Investment: tangible vs intangible", pad=15)
     
     # Y-axis label depends on normalization
@@ -512,7 +512,7 @@ def plot_investment_composition(investment_timeseries, as_pct_gdp=True):
                frameon=True, loc="upper left")
     
     plt.tight_layout()
-    
+    plt.savefig('0_output/I_decomp.png', dpi=200)
     plt.show()
     
     

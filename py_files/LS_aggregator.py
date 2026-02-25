@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 import numpy as np
 
-def plot_labor_share_variations(df_e_slim, variations: dict, colors=None, output_path='0_output/LS_2.png'):
+def plot_labor_share_variations(df_e_slim, variations: dict, colors=None):
     if colors is None:
         colors = ['#F76A4D', '#41FAB4', '#4D9FF7', '#F7D94D', '#A44DF7']
 
@@ -44,6 +44,7 @@ def plot_labor_share_variations(df_e_slim, variations: dict, colors=None, output
     ax.legend(loc='lower left')
     fig.suptitle('Labour share difference: investment vs consumption sector', y=0.95)
     plt.tight_layout()
-    plt.savefig(output_path)
+
+    plt.savefig('0_output/LS_2.png', dpi=200)
     plt.show()
     return results
