@@ -69,7 +69,7 @@ def set_aej(**kwargs):
     """Set matplotlib style for AEJ-style figures."""
     mpl.rcParams.update({
         "font.family": "serif",
-        "font.size": 15,
+        "font.size": 12,
 
         "axes.linewidth": 1.0,
         "lines.linewidth": 1.2,
