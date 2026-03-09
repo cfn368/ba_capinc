@@ -434,7 +434,7 @@ def plot_investment_composition(investment_timeseries, as_pct_gdp=True):
     
     # --- Left panel setup ---
     order = ["structures", "equipment", "intellectual_property", "organizational"]
-    labels = ["Structure", "Equipment", "Intellectual Property", "Organizational services"]
+    labels = ["Structure", "Equipment", "Intellectual Property Products", "Organizational services"]
     
     ys_left = np.vstack([wide[c].to_numpy() for c in order])
     x = wide.index.to_numpy()
@@ -482,7 +482,7 @@ def plot_investment_composition(investment_timeseries, as_pct_gdp=True):
     # Set appropriate y-axis limits based on normalization
     if as_pct_gdp:
         ylim_top = 50
-        tick_interval = 5
+        tick_interval = 10
     else:
         ylim_top = min(100, ymax * 1.3)  # Shares sum to 100%
         tick_interval = 10
@@ -502,8 +502,6 @@ def plot_investment_composition(investment_timeseries, as_pct_gdp=True):
     # Y-axis label depends on normalization
     ylabel = "Percent of GDP" if as_pct_gdp else "Percent of total investment"
     ax2.set_ylabel(ylabel)
-    ax1.set_xlabel("Year")
-    ax2.set_xlabel("Year")
     
     # Legends (reversed order for correct stacking display)
     ax1.legend(handles=polys1[::-1], labels=labels[::-1], 

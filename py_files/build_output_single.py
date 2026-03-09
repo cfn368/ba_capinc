@@ -136,7 +136,7 @@ def welfare_effects(m, sim_raw, tau_long, dlog_net_long,
         ax2.legend(frameon=True)
         ax2.grid(True, which="both", linestyle="--", alpha=0.5)
 
-        plt.savefig('0_output/sim_lr.png', dpi=200)
+        # plt.savefig('0_output/sim_lr.png', dpi=200)
 
         return fig, (ax1, ax2), ss, sim
 

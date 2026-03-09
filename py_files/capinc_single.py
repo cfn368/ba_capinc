@@ -20,14 +20,18 @@ class CapIncModel_single:
         # self.beta2L     = 0.28  
         
         # DK calib (WIP)
-        self.alphaL     = 0.6060    # 6107
+        # main: 0.609, 0.647, 0.65
+        # 1970: 0.542, 0.645, 0.8
+        # 2020: 0.595, 0.641, 0.6
+        
+        self.alphaL     = 0.609    # 2022
         self.alphaK     = 1- self.alphaL
         
-        self.betaL      = 0.6537    # 0.5131 0.6681
+        self.betaL      = 0.647    # 2022
         self.betaK      = 1 - self.betaL
         
-        self.mu         = 0.26  # labour 1 adjustment cost param
-        self.phi        = 0.75  # labour 1 adjustment cost curvature
+        self.mu         = 0.26  # labour adjustment cost param
+        self.phi        = 0.65  # specialised labour supply: 0.8, 0.6 main: 0.7
         self.L          = 1.0   
         self.z_last     = np.array([0.0, 0.0, 0.0])
         self._ss        = None
@@ -338,7 +342,7 @@ class CapIncModel_single:
 
                 return np.array(
                     [
-                        prem,                      # = 0
+                        prem,                     # = 0
                         eps - float(target_elas), # = 0
                     ],
                     float,

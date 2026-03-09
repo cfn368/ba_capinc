@@ -42,6 +42,9 @@ import py_files.build_output_v2 as build_output
 import py_files.var_groups as var_groups
 import py_files.build_output_single as build_output_single
 import py_files.inverse_leontif as il
+import py_files.LS_aggregator as sls
+import py_files.wage_employment as we
+
 from py_files.capinc_single import CapIncModel_single
 
 
@@ -69,7 +72,7 @@ def set_aej(**kwargs):
     """Set matplotlib style for AEJ-style figures."""
     mpl.rcParams.update({
         "font.family": "serif",
-        "font.size": 12,
+        "font.size": 15,
 
         "axes.linewidth": 1.0,
         "lines.linewidth": 1.2,
@@ -114,5 +117,5 @@ __all__ = [
     "dataclass", "display", "DstApi", "reduce", "inv",
     # project imports
     "CapIncModel", "shocks", "build_output", "var_groups",
-    "build_output_single", "CapIncModel_single", "il",
+    "build_output_single", "CapIncModel_single", "il",'sls','we'
 ]

@@ -101,11 +101,11 @@ def draw_baseline(ax):
     _mark_eq(ax, 1.0, 1.0, K_new, q_new)
 
     ax.text(0.97, 0.05,
-            "$\\varepsilon^S = {:.2f}$\n$\\varepsilon^D = {:.2f}$".format(eps_S, eps_D),
+            "$\\varepsilon^S = 1.46$\n$\\varepsilon^D = 1.34$".format(eps_S, eps_D),
             transform=ax.transAxes, ha="right", va="bottom",
             bbox=dict(boxstyle="round,pad=0.3", fc="white", alpha=0.85, ec="#bbb"))
 
-    _format_ax(ax, "(b) General case: $\\alpha_K > \\beta_K$", ylabel=False)
+    _format_ax(ax, "(b) Intangible era $\\alpha_K > \\beta_K$", ylabel=False)
 
 
 # ── shared helpers ────────────────────────────────────────────────────────────
@@ -137,12 +137,12 @@ def add_legend(fig):
     ]
     fig.legend(handles=handles, loc="lower center", ncol=5,
                frameon=True, framealpha=0.9,
-               bbox_to_anchor=(0.5, 0.02))
+               bbox_to_anchor=(0.5, -0.05))
 
 
 # ── main entry point ──────────────────────────────────────────────────────────
 def make_figure(save_path=None):
-    fig, axes = plt.subplots(1, 2, figsize=(12, 6), sharey=True)
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4), sharey=True)
     fig.subplots_adjust(wspace=0.06, bottom=0.18)
 
     draw_ngm(axes[0])
@@ -152,9 +152,8 @@ def make_figure(save_path=None):
     if save_path:
         import pathlib
         pathlib.Path(save_path).parent.mkdir(parents=True, exist_ok=True)
-        for ext in [".pdf", ".png"]:
-            fig.savefig(save_path + ext, bbox_inches="tight", dpi=300)
-        print(f"Saved: {save_path}{{.pdf,.png}}")
+        fig.savefig(save_path, bbox_inches="tight", dpi=300)
+        print(f"Saved: {save_path}{{.png}}")
     return fig
 
 
