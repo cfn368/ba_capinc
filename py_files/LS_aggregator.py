@@ -367,107 +367,107 @@ def plot_ls_difference(df_ts, save_path='0_output/LS_consolidated.png'):
 # ========== ========== ========== ========== ========== ==========
 # 7. Plot: LS levels for both sectors over time
 # ========== ========== ========== ========== ========== ==========
-def plot_ls_levels(df_ts, save_path='0_output/LS_levels.png'):
-    """
-    Two-panel plot showing LS_C and LS_I over time (like GG-B Fig 4).
+# def plot_ls_levels(df_ts, save_path='0_output/LS_levels.png'):
+#     """
+#     Two-panel plot showing LS_C and LS_I over time (like GG-B Fig 4).
 
-    Parameters
-    ----------
-    df_ts : DataFrame from compute_sectoral_ls_timeseries()
-    save_path : str or None
-    """
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5), sharey=True)
+#     Parameters
+#     ----------
+#     df_ts : DataFrame from compute_sectoral_ls_timeseries()
+#     save_path : str or None
+#     """
+#     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5), sharey=True)
 
-    # --- consumption sector ---
-    ax1.stackplot(
-        df_ts.index, df_ts['LS_C'],
-        colors=['#1F2A44'], alpha=0.65, linewidth=0.8
-    )
-    ax1.set_title('Aggregate consumption sector', pad=12)
-    ax1.set_ylabel('Labour share (%)')
-    ax1.set_ylim(50, 70)
+#     # --- consumption sector ---
+#     ax1.stackplot(
+#         df_ts.index, df_ts['LS_C'],
+#         colors=['#1F2A44'], alpha=0.65, linewidth=0.8
+#     )
+#     ax1.set_title('Aggregate consumption sector', pad=12)
+#     ax1.set_ylabel('Labour share (%)')
+#     ax1.set_ylim(50, 70)
 
-    # --- investment sector ---
-    ax2.stackplot(
-        df_ts.index, df_ts['LS_I'],
-        colors=['#2A9D8F'], alpha=0.65, linewidth=0.8
-    )
-    ax2.set_title('Aggregate investment sector', pad=12)
+#     # --- investment sector ---
+#     ax2.stackplot(
+#         df_ts.index, df_ts['LS_I'],
+#         colors=['#2A9D8F'], alpha=0.65, linewidth=0.8
+#     )
+#     ax2.set_title('Aggregate investment sector', pad=12)
 
-    for ax in (ax1, ax2):
-        ax.set_xlim(df_ts.index.min(), df_ts.index.max())
-        ax.grid(linewidth=0.6, alpha=0.35)
-        ax.xaxis.set_major_locator(mticker.MaxNLocator(nbins=8))
-        ticks = np.arange(0, 81, 20)
-        ax.set_yticks(ticks)
-        ax.set_yticklabels([f"{t:.0f}%" for t in ticks])
+#     for ax in (ax1, ax2):
+#         ax.set_xlim(df_ts.index.min(), df_ts.index.max())
+#         ax.grid(linewidth=0.6, alpha=0.35)
+#         ax.xaxis.set_major_locator(mticker.MaxNLocator(nbins=8))
+#         ticks = np.arange(0, 81, 20)
+#         ax.set_yticks(ticks)
+#         ax.set_yticklabels([f"{t:.0f}%" for t in ticks])
 
-    plt.tight_layout()
+#     plt.tight_layout()
 
-    # if save_path:
-    #     plt.savefig(save_path, dpi=200)
-    plt.show()
+#     # if save_path:
+#     #     plt.savefig(save_path, dpi=200)
+#     plt.show()
 
-    return fig, (ax1, ax2)
+#     return fig, (ax1, ax2)
 
 
 # ========== ========== ========== ========== ========== ==========
 # 8. Plot: LS difference with multiple variations (overlay)
 # ========== ========== ========== ========== ========== ==========
-def plot_ls_variations(variations: dict, colors=None,
-                       save_path='0_output/LS_variations.png'):
-    """
-    Overlay multiple LS_I − LS_C series on one axis, e.g. to compare
-    kappa values or org-services inclusion.
+# def plot_ls_variations(variations: dict, colors=None,
+#                        save_path='0_output/LS_variations.png'):
+#     """
+#     Overlay multiple LS_I − LS_C series on one axis, e.g. to compare
+#     kappa values or org-services inclusion.
 
-    Parameters
-    ----------
-    variations : dict
-        {label: DataFrame} where each DataFrame is the output of
-        compute_sectoral_ls_timeseries() (indexed by year).
-    colors : list or None
-    save_path : str or None
+#     Parameters
+#     ----------
+#     variations : dict
+#         {label: DataFrame} where each DataFrame is the output of
+#         compute_sectoral_ls_timeseries() (indexed by year).
+#     colors : list or None
+#     save_path : str or None
 
-    Example
-    -------
-    >>> base = sls.compute_sectoral_ls_timeseries(years, kappa=0.6)
-    >>> no_org = sls.compute_sectoral_ls_timeseries(years, kappa=0.0)
-    >>> sls.plot_ls_variations({
-    ...     r'$\kappa = 0.6$': base,
-    ...     r'$\kappa = 0$ (no org. adj.)': no_org,
-    ... })
-    """
-    if colors is None:
-        colors = ['#F76A4D', '#41FAB4', '#4D9FF7', '#F7D94D', '#A44DF7']
+#     Example
+#     -------
+#     >>> base = sls.compute_sectoral_ls_timeseries(years, kappa=0.6)
+#     >>> no_org = sls.compute_sectoral_ls_timeseries(years, kappa=0.0)
+#     >>> sls.plot_ls_variations({
+#     ...     r'$\kappa = 0.6$': base,
+#     ...     r'$\kappa = 0$ (no org. adj.)': no_org,
+#     ... })
+#     """
+#     if colors is None:
+#         colors = ['#F76A4D', '#41FAB4', '#4D9FF7', '#F7D94D', '#A44DF7']
 
-    fig, ax = plt.subplots(1, 1, figsize=(12, 4))
+#     fig, ax = plt.subplots(1, 1, figsize=(12, 4))
 
-    for (label, df_ts), color in zip(variations.items(), colors):
-        ax.plot(
-            df_ts.index, df_ts['LS_I_minus_C'],
-            color=color, lw=2, ls='-',
-            label=label
-        )
+#     for (label, df_ts), color in zip(variations.items(), colors):
+#         ax.plot(
+#             df_ts.index, df_ts['LS_I_minus_C'],
+#             color=color, lw=2, ls='-',
+#             label=label
+#         )
 
-    ax.axhline(0, color='0.2', linewidth=2, ls='--')
+#     ax.axhline(0, color='0.2', linewidth=2, ls='--')
 
-    # x-limits from widest series
-    all_years = np.concatenate([df.index.values for df in variations.values()])
-    ax.set_xlim(all_years.min(), all_years.max())
+#     # x-limits from widest series
+#     all_years = np.concatenate([df.index.values for df in variations.values()])
+#     ax.set_xlim(all_years.min(), all_years.max())
 
-    ax.set_ylabel(r'$\Delta LS \;(I-C)\;$ pp.')
-    ax.grid(linewidth=0.6, alpha=0.35)
-    ax.xaxis.set_major_locator(mticker.MaxNLocator(nbins=12))
-    ax.legend(loc='lower left')
+#     ax.set_ylabel(r'$\Delta LS \;(I-C)\;$ pp.')
+#     ax.grid(linewidth=0.6, alpha=0.35)
+#     ax.xaxis.set_major_locator(mticker.MaxNLocator(nbins=12))
+#     ax.legend(loc='lower left')
 
-    fig.suptitle(
-        'Labour share difference: investment vs consumption sector',
-        y=0.95
-    )
-    plt.tight_layout()
+#     fig.suptitle(
+#         'Labour share difference: investment vs consumption sector',
+#         y=0.95
+#     )
+#     plt.tight_layout()
 
-    if save_path:
-        plt.savefig(save_path, dpi=200)
-    plt.show()
+#     if save_path:
+#         plt.savefig(save_path, dpi=200)
+#     plt.show()
 
-    return fig, ax
+#     return fig, ax

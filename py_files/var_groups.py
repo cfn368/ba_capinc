@@ -30,18 +30,18 @@ model_var = {
     'LI':       r'$L_{I}$',
 }
 
-def panels(gamma): 
-    return [
-    # ("Y", r"$Y$"),
-    # ("C", r"$C$"),
-    # ('pII', r"$p_II$"),
-    # ("wC", r"$w_C$"),
-    # ("wI", r"$w_I$"),
-    ("LS_C", r"$LS_C$"),
-    ("LS_I", r"$LS_I$"),
-    ("LS", r"$LS$"),
-    ("LS_gamma", rf"Adj. $LS,\; (\gamma={gamma})$"),
-]
+# def panels(gamma): 
+#     return [
+#     # ("Y", r"$Y$"),
+#     # ("C", r"$C$"),
+#     # ('pII', r"$p_II$"),
+#     # ("wC", r"$w_C$"),
+#     # ("wI", r"$w_I$"),
+#     ("LS_C", r"$LS_C$"),
+#     ("LS_I", r"$LS_I$"),
+#     ("LS", r"$LS$"),
+#     ("LS_gamma", rf"Adj. $LS,\; (\gamma={gamma})$"),
+# ]
     
 # ========== ========== ========== ========== ==========
 # 2. investment share
@@ -305,89 +305,89 @@ subs = pd.Index([
     'SB Activities of households as employers of domestic personnel'
 ])
 
-# LIKE GGB
-# Excluded industries
-excluded_industries = {
-    'Of': 'General government'  # Aggregate containing O, P, QA, QB - avoid double-counting
-}
+# # LIKE GGB
+# # Excluded industries
+# excluded_industries = {
+#     'Of': 'General government'  # Aggregate containing O, P, QA, QB - avoid double-counting
+# }
 
-# Investment sector (capital-producing industries)
-investment_industries = {
-    'CC': 'Wood and paper products and printing',  
-    'CG': 'Manufacture of plastic, glass and concrete',
-    'CF': 'Pharmaceuticals',
-    'CH': 'Basic metals and fabricated metal products',
-    'CI': 'Manufacture of electronic components',
-    'CJ': 'Electrical equipment',
-    'CK': 'Manufacture of machinery',
-    'CM': 'Manufacture of furniture and other manufacturing',
-    'F': 'Construction',
-    'MA': 'Consultancy etc.',
-    'MB': 'Scientific research and development',
-    'JC': 'IT and information service activities',
-}
+# # Investment sector (capital-producing industries)
+# investment_industries = {
+#     'CC': 'Wood and paper products and printing',  
+#     'CG': 'Manufacture of plastic, glass and concrete',
+#     'CF': 'Pharmaceuticals',
+#     'CH': 'Basic metals and fabricated metal products',
+#     'CI': 'Manufacture of electronic components',
+#     'CJ': 'Electrical equipment',
+#     'CK': 'Manufacture of machinery',
+#     'CM': 'Manufacture of furniture and other manufacturing',
+#     'F': 'Construction',
+#     'MA': 'Consultancy etc.',
+#     'MB': 'Scientific research and development',
+#     'JC': 'IT and information service activities',
+# }
 
-# Consumption sector (consumption-producing industries)
-consumption_industries = {
-    'A': 'Agriculture, forestry and fishing',
-    'B': 'Mining and quarrying',
-    'CA': 'Manufacture of food products, beverages and tobacco',
-    'CB': 'Textiles and leather products',
-    'CD': 'Oil refinery etc.', 
-    'CE': 'Manufacture of chemicals',
-    'CL': 'Transport equipment',
-    'D': 'Electricity, gas, steam and air conditioning supply',
-    'E': 'Water supply, sewerage and waste management',
-    'G': 'Wholesale and retail trade',
-    'H': 'Transportation',
-    'I': 'Accommodation and food service activities',
-    'JA': 'Publishing, television and radio broadcasting', 
-    'JB': 'Telecommunications',
-    'K': 'Financial and insurance',
-    'LA': 'Real estate activities and renting of non-residential',
-    'LB': 'Dwellings',
-    'MC': 'Advertising and other business services',
-    'N': 'Travel agents, cleaning, and other operational support services',
-    'O': 'Public administration, defence and compulsory social security',
-    'P': 'Education',
-    'QA': 'Human health activities',
-    'QB': 'Residential care',
-    'R': 'Arts, entertainment and recreation activities',
-    'SA': 'Other service activities',
-    'SB': 'Activities of households as employers of domestic personnel'
-}
+# # Consumption sector (consumption-producing industries)
+# consumption_industries = {
+#     'A': 'Agriculture, forestry and fishing',
+#     'B': 'Mining and quarrying',
+#     'CA': 'Manufacture of food products, beverages and tobacco',
+#     'CB': 'Textiles and leather products',
+#     'CD': 'Oil refinery etc.', 
+#     'CE': 'Manufacture of chemicals',
+#     'CL': 'Transport equipment',
+#     'D': 'Electricity, gas, steam and air conditioning supply',
+#     'E': 'Water supply, sewerage and waste management',
+#     'G': 'Wholesale and retail trade',
+#     'H': 'Transportation',
+#     'I': 'Accommodation and food service activities',
+#     'JA': 'Publishing, television and radio broadcasting', 
+#     'JB': 'Telecommunications',
+#     'K': 'Financial and insurance',
+#     'LA': 'Real estate activities and renting of non-residential',
+#     'LB': 'Dwellings',
+#     'MC': 'Advertising and other business services',
+#     'N': 'Travel agents, cleaning, and other operational support services',
+#     'O': 'Public administration, defence and compulsory social security',
+#     'P': 'Education',
+#     'QA': 'Human health activities',
+#     'QB': 'Residential care',
+#     'R': 'Arts, entertainment and recreation activities',
+#     'SA': 'Other service activities',
+#     'SB': 'Activities of households as employers of domestic personnel'
+# }
 
-# AGG ABOVE for direct
-investment_industries2 = investment_industries.copy()
-del investment_industries2['CC']
-investment_industries2['JC'] = 'IT and information service activities'
-investment_industries2['MA'] = 'Consultancy etc.'
+# # AGG ABOVE for direct
+# investment_industries2 = investment_industries.copy()
+# del investment_industries2['CC']
+# investment_industries2['JC'] = 'IT and information service activities'
+# investment_industries2['MA'] = 'Consultancy etc.'
 
-consumption_industries2 = consumption_industries.copy()
-consumption_industries2['CE'] = 'Manufacture of chemicals'
-consumption_industries2['JC'] = 'IT and information service activities'
-consumption_industries2['MA'] = 'Consultancy etc.'
+# consumption_industries2 = consumption_industries.copy()
+# consumption_industries2['CE'] = 'Manufacture of chemicals'
+# consumption_industries2['JC'] = 'IT and information service activities'
+# consumption_industries2['MA'] = 'Consultancy etc.'
 
-# TOP 10
-investment_industries3 = investment_industries2.copy()
-del investment_industries2['CF'] 
+# # TOP 10
+# investment_industries3 = investment_industries2.copy()
+# del investment_industries2['CF'] 
 
-consumption_industries3 = consumption_industries.copy()
-del consumption_industries3['E']
-del consumption_industries3['R']
-del consumption_industries3['P']
-del consumption_industries3['D']
-del consumption_industries3['JB']
-del consumption_industries3['CD']
-del consumption_industries3['H']
-del consumption_industries3['N']
-del consumption_industries3['CB']
-del consumption_industries3['MC']
-del consumption_industries3['CL']
-del consumption_industries3['LA']
-del consumption_industries3['G']
-del consumption_industries3['JA']
+# consumption_industries3 = consumption_industries.copy()
+# del consumption_industries3['E']
+# del consumption_industries3['R']
+# del consumption_industries3['P']
+# del consumption_industries3['D']
+# del consumption_industries3['JB']
+# del consumption_industries3['CD']
+# del consumption_industries3['H']
+# del consumption_industries3['N']
+# del consumption_industries3['CB']
+# del consumption_industries3['MC']
+# del consumption_industries3['CL']
+# del consumption_industries3['LA']
+# del consumption_industries3['G']
+# del consumption_industries3['JA']
 
-# NO PHARMA
-investment_industries4 = investment_industries.copy()
-del investment_industries4['CF']
+# # NO PHARMA
+# investment_industries4 = investment_industries.copy()
+# del investment_industries4['CF']

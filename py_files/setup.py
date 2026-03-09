@@ -36,9 +36,9 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 
 # --- your project ---
-from py_files.capinc import CapIncModel
+from old.capinc import CapIncModel
 import py_files.shocks as shocks
-import py_files.build_output_v2 as build_output
+import old.build_output_v2 as build_output
 import py_files.var_groups as var_groups
 import py_files.build_output_single as build_output_single
 import py_files.inverse_leontif as il
