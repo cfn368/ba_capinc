@@ -12,23 +12,16 @@ class CapIncModel_single:
         self.delta      = 0.15  # depreciation rate
         self.theta      = 0.25  # capital share in capital production
         
-        # self.alphaK     = 0.36  
-        # self.alpha1L    = 0.39  
-        # self.alpha2L    = 0.25  
-        # self.betaK      = 0.26  
-        # self.beta1L     = 0.46 
-        # self.beta2L     = 0.28  
-        
         # DK calib (WIP)
         # main: 0.609, 0.647, 0.65
         # 1970: 0.542, 0.645, 0.8
         # 2020: 0.595, 0.641, 0.6
         
-        self.alphaL     = 0.609    # 2022
-        self.alphaK     = 1- self.alphaL
+        self.betaL     = 0.609    # 2022 xx
+        self.betaK     = 1- self.betaL
         
-        self.betaL      = 0.647    # 2022
-        self.betaK      = 1 - self.betaL
+        self.alphaL      = 0.647    # 2022
+        self.alpha_K      = 1 - self.alphaL
         
         self.mu         = 0.26  # labour adjustment cost param
         self.phi        = 0.65  # specialised labour supply: 0.8, 0.6 main: 0.7

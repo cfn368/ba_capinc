@@ -25,6 +25,12 @@ GENERAL = dict(
     betaK=0.35,  betaL=0.65,
     phi=0.75,
 )
+# GENERAL = dict(
+#     betaK=0.49, betaL=0.51,
+#     alphaK=0.35,  alphaL=0.65,
+#     phi=0.75,
+# )
+
 
 DTAU = 0.10   # illustrative 10 pp tax cut
 
@@ -84,7 +90,8 @@ def draw_ngm(ax):
             transform=ax.transAxes, ha="right", va="bottom",
             bbox=dict(boxstyle="round,pad=0.3", fc="white", alpha=0.85, ec="#bbb"))
 
-    _format_ax(ax, "(a) Neoclassical case: $\\alpha_K = \\beta_K$", ylabel=True)
+    _format_ax(ax, "Neoclassical case: $\\alpha_K = \\beta_K$", ylabel=True)
+    ax.title.set_fontsize(15)
 
 
 # ── panel (b): baseline calibration ──────────────────────────────────────────
@@ -105,7 +112,8 @@ def draw_baseline(ax):
             transform=ax.transAxes, ha="right", va="bottom",
             bbox=dict(boxstyle="round,pad=0.3", fc="white", alpha=0.85, ec="#bbb"))
 
-    _format_ax(ax, "(b) Intangible era $\\alpha_K > \\beta_K$", ylabel=False)
+    _format_ax(ax, "Intangible era $\\alpha_K > \\beta_K$", ylabel=False)
+    ax.title.set_fontsize(15)
 
 
 # ── shared helpers ────────────────────────────────────────────────────────────

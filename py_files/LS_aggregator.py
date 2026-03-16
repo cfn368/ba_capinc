@@ -341,12 +341,12 @@ def plot_ls_difference(df_ts, save_path='0_output/LS_consolidated.png'):
     ax.plot(
         df_ts.index, df_ts['LS_I_minus_C'],
         color='crimson', lw=2, ls='-',
-        label=r'$\Delta LS$ (investment - consumption sector)'
+        label=r'$\Delta LS = LS_I - LS_C$'
     )
 
     ax.axhline(0, color='#1F2A44', linewidth=1.2, ls='--')
     ax.set_xlim(df_ts.index.min(), df_ts.index.max())
-    ax.set_ylabel('%')
+    ax.set_ylabel('Percentage points')
     ax.grid(linewidth=0.6, alpha=0.35)
     ax.xaxis.set_major_locator(mticker.MaxNLocator(nbins=12))
     ax.legend(loc='upper right')
