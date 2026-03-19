@@ -74,6 +74,12 @@ def welfare_effects(m, sim_raw, tau_long, dlog_net_long,
         # add discounting
         t_full = np.arange(T_solve + 1)
         beta = 1/(1 + m.r) ** t_full
+        
+        # 6b) discounted welfare flow paths
+        wg_C_disc = beta * wg_C_full
+        wg_I_disc = beta * wg_I_full
+        wg_K_disc = beta * wg_K_full
+        WG_disc   = beta * WG_total_full
 
         pv = lambda x: float(np.sum(beta * np.asarray(x, float)))
 
@@ -92,10 +98,10 @@ def welfare_effects(m, sim_raw, tau_long, dlog_net_long,
         }
 
         # 8) Plot arrays: slice AFTER computing full welfare
-        wC_pct = 100.0 * wg_C_full[sl_plot] / C_norm
-        wI_pct = 100.0 * wg_I_full[sl_plot] / C_norm
-        wK_pct = 100.0 * wg_K_full[sl_plot] / C_norm
-        WG_pct = 100.0 * WG_total_full[sl_plot] / C_norm
+        # wC_pct = 100.0 * wg_C_full[sl_plot] / C_norm
+        # wI_pct = 100.0 * wg_I_full[sl_plot] / C_norm
+        # wK_pct = 100.0 * wg_K_full[sl_plot] / C_norm
+        # WG_pct = 100.0 * WG_total_full[sl_plot] / C_norm
 
         # 9) build sim dict for return (plot horizon only, but include full-table scalars)
         sim = {k: (v[sl_plot] if isinstance(v, np.ndarray) and v.shape[0] == T_solve + 1 else v)
@@ -105,10 +111,17 @@ def welfare_effects(m, sim_raw, tau_long, dlog_net_long,
         sim["dpI_pct"] = dpI
         sim["dK_pct"]  = dK
 
-        sim["wg_C"] = wg_C_full[sl_plot]
-        sim["wg_I"] = wg_I_full[sl_plot] 
-        sim["wg_K"] = wg_K_full[sl_plot]
-        sim["WG_total_path"] = WG_total_full[sl_plot]
+        # no discounting
+        # sim["wg_C"] = wg_C_full[sl_plot]
+        # sim["wg_I"] = wg_I_full[sl_plot] 
+        # sim["wg_K"] = wg_K_full[sl_plot]
+        # sim["WG_total_path"] = WG_total_full[sl_plot]
+        
+        # discounting
+        sim["wg_C"] = wg_C_disc[sl_plot]
+        sim["wg_I"] = wg_I_disc[sl_plot]
+        sim["wg_K"] = wg_K_disc[sl_plot]
+        sim["WG_total_path"] = WG_disc[sl_plot]
 
         sim["table"] = table  
 
@@ -141,33 +154,6 @@ def welfare_effects(m, sim_raw, tau_long, dlog_net_long,
         # return fig, (ax1, ax2), ss, sim
         return ss, sim
 
-
-###########################################################
-# 2. labour income share
-###########################################################
-
-# def labour_share(m, sim, gamma=1):
-#         # 1) value added in consumption units
-#         C  = np.asarray(sim["C"], float)
-#         I  = np.asarray(sim["I"], float)
-#         pI = np.asarray(sim["pI"], float)
-#         Y  = C + pI * I
-
-#         # 2) value weights of sectors
-#         wI = (pI * I) / Y
-#         wC = C / Y
-
-#         LS_C = (1 - m.alphaK) * wC
-#         LS_I = (1 - m.betaK) * wI
-
-#         # 3) aggregate labor share (competitive Cobb–Douglas within each sector)
-#         LS = LS_C + LS_I
-#         LS_gamma = LS_C + gamma*LS_I
-#         return {"Y": Y, "wC": wC, "wI": wI, 
-#                 "LS": LS, 'LS_C': LS_C, 'LS_I': LS_I,
-#                 'LS_gamma': LS_gamma, 'pII': pI * I,
-#                 'C': C,
-#                 }
 
 ###########################################################
 # 3. incidence and elasticities

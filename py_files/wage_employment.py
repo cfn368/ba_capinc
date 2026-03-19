@@ -271,48 +271,26 @@ def compute_wage_employment_timeseries(years, kappa=0.6):
 # 6. Plot: w_I/w_C and L_I/L_C on dual axes
 # ========== ========== ========== ========== ========== ==========
 def plot_wage_employment(df, save_path='0_output/wage_employment.png'):
-    """
-    Single figure, dual y-axes:
-      Left:  w_I / w_C  (wage ratio)
-      Right: L_I / L_C  (employment ratio)
-
-    Parameters
-    ----------
-    df : DataFrame from compute_wage_employment_timeseries()
-    save_path : str or None
-    """
     fig, ax = plt.subplots(1, 1, figsize=(12, 4))
-    ax_r = ax.twinx()
 
-    # --- left axis: wage ratio ---
+    # --- wage ratio ---
     l1, = ax.plot(
         df.index, df['w_ratio'],
         color='crimson', lw=2, ls='-',
     )
-    ax.axhline(1, color='0.2', linewidth=1, ls='--')
-    ax.set_ylabel(r'$w_I\,/\,w_C$')
-    ax.set_xlabel('Year')
 
-    # --- right axis: employment ratio ---
-    l2, = ax_r.plot(
+    # --- employment ratio (same axis) ---
+    l2, = ax.plot(
         df.index, df['L_ratio'],
         color='#1F2A44', lw=2, ls='--',
     )
-    ax_r.set_ylabel(r'$L_I\,/\,L_C$')
 
-    # --- formatting ---
-    w_vals = df['w_ratio'].dropna()
-    L_vals = df['L_ratio'].dropna()
+    ax.axhline(1, color='0.2', linewidth=1, ls='--')
+    ax.set_ylabel(r'Ratio')
+    ax.set_xlabel('Year')
 
-    w_dev = max(w_vals.max() - 1, 1 - w_vals.min()) * 1.15   # 15% padding
-    L_dev = max(L_vals.max() - 1, 1 - L_vals.min()) * 1.15
-
-    ax.set_ylim(1 - w_dev, 1 + w_dev)
-    ax_r.set_ylim(1 - L_dev, 1 + L_dev)
     ax.grid(linewidth=0.6, alpha=0.35)
-    
     ax.set_xlim(df.index.min(), df.index.max())
-    ax.grid(linewidth=0.6, alpha=0.35)
     ax.xaxis.set_major_locator(mticker.MaxNLocator(nbins=12))
 
     ax.legend(
@@ -321,10 +299,6 @@ def plot_wage_employment(df, save_path='0_output/wage_employment.png'):
         loc='upper right'
     )
 
-    # fig.suptitle(
-    #     'Sectoral wage and employment ratios (continuous weights)',
-    #     y=0.95
-    # )
     plt.tight_layout()
 
     if save_path:

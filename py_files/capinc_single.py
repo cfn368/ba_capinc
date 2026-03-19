@@ -17,14 +17,14 @@ class CapIncModel_single:
         # 1970: 0.542, 0.645, 0.8
         # 2020: 0.595, 0.641, 0.6
         
-        self.betaL     = 0.609    # 2022 xx
-        self.betaK     = 1- self.betaL
+        self.alphaL     = 0.609    # 2022
+        self.alphaK     = 1- self.alphaL
         
-        self.alphaL      = 0.647    # 2022
-        self.alpha_K      = 1 - self.alphaL
+        self.betaL      = 0.647    # 2022
+        self.betaK      = 1 - self.betaL
         
         self.mu         = 0.26  # labour adjustment cost param
-        self.phi        = 0.65  # specialised labour supply: 0.8, 0.6 main: 0.7
+        self.phi        = 0.75  # specialised labour supply: 0.8, 0.6 main: 0.7
         self.L          = 1.0   
         self.z_last     = np.array([0.0, 0.0, 0.0])
         self._ss        = None
@@ -98,7 +98,8 @@ class CapIncModel_single:
         wI = bL * pI * I / LI
 
         # 3.11 gross MPK in C-sector (before tax); tax enters only in Euler later
-        rC_gross = aK * C / KC
+        rC_gross = aK * C / KC 
+        # rC_gross = aK * C / KC * (1-tau)
 
         return {
             "sK": sK, "sL": sL, "pI": pI,

@@ -458,7 +458,7 @@ def plot_investment_composition(investment_timeseries, as_pct_gdp=True):
     ]
     
     # --- Create figure ---
-    fig, (ax2, ax1) = plt.subplots(1, 2, figsize=(12, 6), sharey=True)
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6), sharey=True)
     
     # Left panel - 4 types
     polys1 = ax1.stackplot(
