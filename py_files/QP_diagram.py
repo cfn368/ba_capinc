@@ -21,8 +21,8 @@ C_OLD     = "k"   # grey       — old equilibrium
 
 # ── baseline calibration ──────────────────────────────────────────────────────
 GENERAL = dict(
-    alphaK=0.49, alphaL=0.51,
-    betaK=0.35,  betaL=0.65,
+    alphaK=0.39, alphaL=0.61,
+    betaK=0.29,  betaL=0.71,
     phi=0.75,
 )
 # GENERAL = dict(
@@ -90,7 +90,7 @@ def draw_ngm(ax):
             transform=ax.transAxes, ha="right", va="bottom",
             bbox=dict(boxstyle="round,pad=0.3", fc="white", alpha=0.85, ec="#bbb"))
 
-    _format_ax(ax, "Neoclassical case: $\\alpha_K = \\beta_K$", ylabel=True)
+    _format_ax(ax, "Neoclassical era $\\alpha_K = \\beta_K$", ylabel=True)
     ax.title.set_fontsize(15)
 
 
@@ -108,7 +108,7 @@ def draw_baseline(ax):
     _mark_eq(ax, 1.0, 1.0, K_new, q_new)
 
     ax.text(0.97, 0.05,
-            "$\\varepsilon^S = 1.46$\n$\\varepsilon^D = 1.34$".format(eps_S, eps_D),
+            "$\\varepsilon^S = 1.44$\n$\\varepsilon^D = 1.49$".format(eps_S, eps_D),
             transform=ax.transAxes, ha="right", va="bottom",
             bbox=dict(boxstyle="round,pad=0.3", fc="white", alpha=0.85, ec="#bbb"))
 

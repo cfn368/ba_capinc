@@ -2,9 +2,8 @@
 Sectoral labor share: GG-B methodology applied to Danish data
 =============================================================
 
-Two corrections relative to prior approach:
-  1. Consolidated labor shares (Leontief-adjusted) instead of direct LS
-  2. Continuous expenditure weights instead of binary industry classification
+Uses direct final-demand weights (no Leontief inverse).
+Continuous expenditure weights instead of binary industry classification.
 
 References: Gomez & Gouin-Bonenfant (2025), Section 2.2, eq. (2.1)
 """
@@ -15,7 +14,7 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 import py_files.var_groups as var_groups
 
-from py_files.inverse_leontif import compute_leontief_for_year
+from py_files.direct_NX import compute_direct_for_year
 from dstapi import DstApi
 
 
@@ -70,83 +69,44 @@ def fetch_industry_labor_shares():
 
 
 # ========== ========== ========== ========== ========== ==========
-# 2. Consolidated labor share per industry (Leontief-adjusted)
+# 2. Direct labor share per industry
 # ========== ========== ========== ========== ========== ==========
 def consolidated_labor_shares(year_result, df_ls_year):
     """
-    Compute the consolidated labor share for each sub-industry
-    using the Leontief inverse from `year_result`.
+    Compute the direct labor share (D1/GVA) for each sub-industry.
 
-    Consolidated LS of industry i:
-        LS^cons_i = sum_j  L_{ji} * (D1_j / X_j)
-
-    where L is the Leontief inverse, D1_j is compensation in j,
-    and X_j is gross output of j.
+    Returns D1_i / GVA_i, which pairs naturally with expenditure-share
+    weights in sectoral_labor_shares().
 
     Parameters
     ----------
     year_result : dict
-        Output of compute_leontief_for_year().  Uses keys:
-        'L_df'  — Leontief inverse  (sub-industries × sub-industries)
-        'X'     — gross output vector (sub-industries)
+        Output of compute_direct_for_year().  Uses key:
+        'X' — gross output vector (sub-industries, for index)
     df_ls_year : DataFrame
         Labour-share data for a *single year*, with columns
         'branche_code' (36a2 parent code), 'e_comp', 'GVA'.
 
     Returns
     -------
-    Series indexed by sub-industry code with consolidated LS (ratio, not %).
+    Series indexed by sub-industry code with direct LS (ratio, not %).
     """
-    L_df = year_result['L_df']                # (n_sub × n_sub)
-    X    = year_result['X']                   # (n_sub,)
-    subs = L_df.index                         # sub-industry codes
+    subs = year_result['X'].index
 
-    # --- map each sub to its 36a2 parent ---
-    parent_map = var_groups.sub_to_parent      # {sub_code: parent_code}
+    parent_map = var_groups.sub_to_parent
 
-    # --- build direct labor-to-output ratio for every sub-industry ---
-    #     We only observe D1 and GVA at the parent level (NABP36),
-    #     so every sub inherits its parent's direct LS.
-    parent_ls = (
-        df_ls_year
-        .set_index('branche_code')
-    )
-    # direct LS at parent level (ratio)
+    parent_ls = df_ls_year.set_index('branche_code')
     parent_ls['direct_ls'] = np.where(
         parent_ls['GVA'] > 0,
         parent_ls['e_comp'] / parent_ls['GVA'],
         0.0
     )
 
-    # map to sub-industries
-    direct_ls_sub = pd.Series(
+    # D1_i / GVA_i — pairs naturally with expenditure-share weights
+    return pd.Series(
         [parent_ls['direct_ls'].get(parent_map.get(s, s), 0.0) for s in subs],
         index=subs
     )
-
-    # --- but we need labor / output, not labor / GVA ---
-    #     direct_ls gives D1/GVA.  We need D1/X for the Leontief weighting.
-    #     Relationship:  D1_i / X_i  =  (D1_i / GVA_i) * (GVA_i / X_i)
-    #     We approximate GVA_i / X_i from the IO table:
-    #         GVA_i = X_i - sum_j Z_{ji}   (output minus intermediate inputs)
-    Z = year_result['Z']
-    intermediate_inputs = Z.sum(axis=0)          # column sums = total intermediate use by industry
-    va_ratio = np.where(
-        X > 0,
-        (X - intermediate_inputs) / X,
-        0.0
-    )
-    va_ratio = pd.Series(va_ratio, index=subs)
-
-    # direct labor-to-output ratio
-    labor_output_ratio = direct_ls_sub * va_ratio    # D1_i / X_i
-
-    # --- consolidated LS: sum_j L_{ji} * (D1_j / X_j)  for each i ---
-    #     In matrix form:  LS^cons = L^T @ labor_output_ratio
-    ls_consolidated = L_df.values.T @ labor_output_ratio.values
-    ls_consolidated = pd.Series(ls_consolidated, index=subs)
-
-    return ls_consolidated
 
 
 # ========== ========== ========== ========== ========== ==========
@@ -240,8 +200,7 @@ def compute_sectoral_ls_timeseries(years, kappa=0.6):
     rows = []
     for year in years:
         try:
-            # Leontief (at sub-industry level)
-            yr = compute_leontief_for_year(year)
+            yr = compute_direct_for_year(year)
 
             # labor shares for this year (at parent level)
             df_ls_yr = df_ls[df_ls['year'] == year]
@@ -273,53 +232,48 @@ def compute_sectoral_ls_timeseries(years, kappa=0.6):
 
 
 # ========== ========== ========== ========== ========== ==========
-# 5. Diagnostic: inspect weights and consolidated LS for one year
+# 5. Diagnostic: inspect weights and direct LS for one year
 # ========== ========== ========== ========== ========== ==========
-# def inspect_year(year, kappa=0.6):
-#     """
-#     Returns a DataFrame at the sub-industry level with:
-#         parent, direct_ls, consolidated_ls, w_C, w_I
-#     Useful for sanity-checking individual industries (e.g. pharma).
-#     """
-#     df_ls = fetch_industry_labor_shares()
-#     yr = compute_leontief_for_year(year)
-#     df_ls_yr = df_ls[df_ls['year'] == year]
+def inspect_year(year, kappa=0.6):
+    """
+    Returns a DataFrame aggregated to parent industry level with:
+        direct_ls, consolidated_ls (= direct_ls here), w_C, w_I
+    Useful for sanity-checking individual industries (e.g. pharma).
+    """
+    df_ls = fetch_industry_labor_shares()
+    yr = compute_direct_for_year(year)
+    df_ls_yr = df_ls[df_ls['year'] == year]
 
-#     ls_cons = consolidated_labor_shares(yr, df_ls_yr)
-#     res     = sectoral_labor_shares(yr, ls_cons, kappa=kappa)
+    ls_cons = consolidated_labor_shares(yr, df_ls_yr)
+    res     = sectoral_labor_shares(yr, ls_cons, kappa=kappa)
 
-#     subs = yr['L_df'].index
-#     parent_map = var_groups.sub_to_parent
+    subs = yr['X'].index
+    parent_map = var_groups.sub_to_parent
 
-#     parent_ls = df_ls_yr.set_index('branche_code')
-#     parent_ls['direct_ls'] = np.where(
-#         parent_ls['GVA'] > 0,
-#         parent_ls['e_comp'] / parent_ls['GVA'],
-#         0.0
-#     )
+    parent_ls = df_ls_yr.set_index('branche_code')
+    parent_ls['direct_ls'] = np.where(
+        parent_ls['GVA'] > 0,
+        parent_ls['e_comp'] / parent_ls['GVA'],
+        0.0
+    )
 
-#     inspect = pd.DataFrame({
-#         'parent':           [parent_map.get(s, s) for s in subs],
-#         'direct_ls':        [parent_ls['direct_ls'].get(parent_map.get(s, s), np.nan) for s in subs],
-#         'consolidated_ls':  ls_cons,
-#         'w_C':              res['weights_C'],
-#         'w_I':              res['weights_I'],
-#     }, index=subs)
+    inspect = pd.DataFrame({
+        'parent':           [parent_map.get(s, s) for s in subs],
+        'direct_ls':        [parent_ls['direct_ls'].get(parent_map.get(s, s), np.nan) for s in subs],
+        'consolidated_ls':  ls_cons.values,
+        'w_C':              res['weights_C'].values,
+        'w_I':              res['weights_I'].values,
+    }, index=subs)
 
-#     # aggregate to parent level for readability
-#     parent_agg = inspect.groupby('parent').agg({
-#         'direct_ls':        'first',
-#         'consolidated_ls':  lambda x: np.average(x, weights=res['weights_C'].reindex(x.index).fillna(0) +
-#                                                            res['weights_I'].reindex(x.index).fillna(0))
-#                                       if (res['weights_C'].reindex(x.index).fillna(0) +
-#                                           res['weights_I'].reindex(x.index).fillna(0)).sum() > 0
-#                                       else x.mean(),
-#         'w_C':              'sum',
-#         'w_I':              'sum',
-#     })
+    parent_agg = inspect.groupby('parent').agg({
+        'direct_ls':       'first',
+        'consolidated_ls': 'mean',
+        'w_C':             'sum',
+        'w_I':             'sum',
+    })
 
-#     parent_agg = parent_agg.sort_values('w_I', ascending=False)
-#     return parent_agg
+    parent_agg = parent_agg.sort_values('w_I', ascending=False)
+    return parent_agg
 
 
 # ========== ========== ========== ========== ========== ==========

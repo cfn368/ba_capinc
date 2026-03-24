@@ -52,6 +52,7 @@ def welfare_effects(m, sim_raw, tau_long, dlog_net_long,
         # worker welfare-flow paths (envelope-consistent, SS weights)
         wg_C_full = (wC_ss * LC_ss) * dlog_wC_full 
         wg_I_full = (wI_ss * LI_ss) * dlog_wI_full 
+
         wg_L_full = wg_C_full + wg_I_full
 
         # net-of-tax log change (FULL). You can ignore dlog_net_long input here to avoid mismatch bugs.

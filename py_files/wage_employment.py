@@ -2,14 +2,14 @@
 Sectoral wages & employment: continuous-weight evidence for φ
 =============================================================
 
-Computes w_I/w_C and L_I/L_C using continuous Leontief-derived weights
+Computes w_I/w_C and L_I/L_C using continuous direct IO weights
 from the sectoral_labor_share module.  The combined figure provides
 empirical motivation for declining specialised labour supply elasticity.
 
 Data sources:
     NABP36  — D.1 compensation of employees by industry
     NABB36  — Hours worked / employees by industry
-    NAIO1F  — Input-output tables (via leontief_analysis)
+    NAIO1F  — Input-output tables (via direct_NX)
 """
 
 import pandas as pd
@@ -17,7 +17,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 import py_files.var_groups as var_groups
-from py_files.inverse_leontif import compute_leontief_for_year
+from py_files.direct_NX import compute_direct_for_year
 from py_files.LS_aggregator import sectoral_labor_shares, consolidated_labor_shares
 
 from dstapi import DstApi
@@ -136,7 +136,7 @@ def fetch_employees():
 # ========== ========== ========== ========== ========== ==========
 def _get_parent_weights(year, kappa=0.6):
     """
-    Run Leontief for `year` and return continuous weights
+    Run direct IO analysis for `year` and return continuous weights
     aggregated to the 36a2 parent level.
 
     Returns dict with:
@@ -149,7 +149,7 @@ def _get_parent_weights(year, kappa=0.6):
         sectoral_labor_shares,
     )
 
-    yr = compute_leontief_for_year(year)
+    yr = compute_direct_for_year(year)
 
     # need LS data to run consolidated_labor_shares (even though
     # we only want the weights here, the function flow requires it)
@@ -296,7 +296,7 @@ def plot_wage_employment(df, save_path='0_output/wage_employment.png'):
     ax.legend(
         [l1, l2],
         [r'Wage ratio $w_I/w_C$', r'Employment ratio $L_I/L_C$'],
-        loc='upper right'
+        loc='center right'
     )
 
     plt.tight_layout()

@@ -12,19 +12,20 @@ class CapIncModel_single:
         self.delta      = 0.15  # depreciation rate
         self.theta      = 0.25  # capital share in capital production
         
-        # DK calib (WIP)
-        # main: 0.609, 0.647, 0.65
-        # 1970: 0.542, 0.645, 0.8
-        # 2020: 0.595, 0.641, 0.6
+        # DK calib 
+        # param:    a_L     a_K     b_L     b_K     phi
+        # base:    0.61    0.39    0.71    0.29    0.75
+        # 1970:    0.59    0.41    0.65    0.35    1.00
+        # 2020:    0.62    0.38    0.67    0.33    0.50
         
-        self.alphaL     = 0.609    # 2022
-        self.alphaK     = 1- self.alphaL
+        self.alphaL     = 0.61
+        self.alphaK     = 0.39
         
-        self.betaL      = 0.647    # 2022
-        self.betaK      = 1 - self.betaL
+        self.betaL      = 0.71  
+        self.betaK      = 0.29
         
-        self.mu         = 0.26  # labour adjustment cost param
-        self.phi        = 0.75  # specialised labour supply: 0.8, 0.6 main: 0.7
+        self.mu         = 0.26  # labour adjustment cost param target
+        self.phi        = 0.75  # calibration target
         self.L          = 1.0   
         self.z_last     = np.array([0.0, 0.0, 0.0])
         self._ss        = None
