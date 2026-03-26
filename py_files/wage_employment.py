@@ -12,13 +12,17 @@ Data sources:
     NAIO1F  — Input-output tables (via direct_NX)
 """
 
+import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 import py_files.var_groups as var_groups
-from py_files.direct_NX import compute_direct_for_year
-from py_files.LS_aggregator import sectoral_labor_shares, consolidated_labor_shares
+from py_files.direct_NX import compute_direct_for_year, load_or_compute_year, CACHE_DIR
+from py_files.LS_aggregator import (
+    sectoral_labor_shares, consolidated_labor_shares,
+    load_or_fetch_industry_labor_shares,
+)
 
 from dstapi import DstApi
 
@@ -132,9 +136,49 @@ def fetch_employees():
 
 
 # ========== ========== ========== ========== ========== ==========
+# cached NABB/NABP fetchers
+
+def load_or_fetch_compensation(cache_dir=CACHE_DIR, force=False):
+    path = os.path.join(cache_dir, "nabb_compensation.parquet")
+    if not force and os.path.exists(path):
+        print("  Loading compensation from cache …")
+        return pd.read_parquet(path)
+    print("Fetching compensation (NABP36) …")
+    df = fetch_compensation()
+    os.makedirs(cache_dir, exist_ok=True)
+    df.to_parquet(path, index=False)
+    return df
+
+
+def load_or_fetch_hours(cache_dir=CACHE_DIR, force=False):
+    path = os.path.join(cache_dir, "nabb_hours.parquet")
+    if not force and os.path.exists(path):
+        print("  Loading hours from cache …")
+        return pd.read_parquet(path)
+    print("Fetching hours (NABB36) …")
+    df = fetch_hours()
+    os.makedirs(cache_dir, exist_ok=True)
+    df.to_parquet(path, index=False)
+    return df
+
+
+def load_or_fetch_employees(cache_dir=CACHE_DIR, force=False):
+    path = os.path.join(cache_dir, "nabb_employees.parquet")
+    if not force and os.path.exists(path):
+        print("  Loading employees from cache …")
+        return pd.read_parquet(path)
+    print("Fetching employees (NABB36) …")
+    df = fetch_employees()
+    os.makedirs(cache_dir, exist_ok=True)
+    df.to_parquet(path, index=False)
+    return df
+
+
+# ========== ========== ========== ========== ========== ==========
 # 4. Get continuous weights for a given year
 
-def _get_parent_weights(year, kappa=0.6):
+def _get_parent_weights(year, kappa=0.6, df_ls_all=None, use_cache=False,
+                        cache_dir=CACHE_DIR):
     """
     Run direct IO analysis for `year` and return continuous weights
     aggregated to the 36a2 parent level.
@@ -143,18 +187,14 @@ def _get_parent_weights(year, kappa=0.6):
         'w_C' : Series indexed by parent code
         'w_I' : Series indexed by parent code
     """
-    from py_files.LS_aggregator import (
-        fetch_industry_labor_shares,
-        consolidated_labor_shares,
-        sectoral_labor_shares,
-    )
+    yr = load_or_compute_year(year, cache_dir=cache_dir) if use_cache \
+         else compute_direct_for_year(year)
 
-    yr = compute_direct_for_year(year)
+    if df_ls_all is None:
+        from py_files.LS_aggregator import fetch_industry_labor_shares
+        df_ls_all = fetch_industry_labor_shares()
 
-    # need LS data to run consolidated_labor_shares (even though
-    # we only want the weights here, the function flow requires it)
-    df_ls = fetch_industry_labor_shares()
-    df_ls_yr = df_ls[df_ls['year'] == year]
+    df_ls_yr = df_ls_all[df_ls_all['year'] == year]
 
     ls_cons = consolidated_labor_shares(yr, df_ls_yr)
     res = sectoral_labor_shares(yr, ls_cons, kappa=kappa)
@@ -177,17 +217,18 @@ def _get_parent_weights(year, kappa=0.6):
 # ========== ========== ========== ========== ========== ==========
 # 5. Compute w_I/w_C and L_I/L_C timeseries
 
-def compute_wage_employment_timeseries(years, kappa=0.6):
+def compute_wage_employment_timeseries(years, kappa=0.6, use_cache=False,
+                                        cache_dir=CACHE_DIR):
     """
     Compute sectoral wage ratio w_I/w_C and employment ratio L_I/L_C
-    using continuous Leontief weights, computed fresh for every year.
+    using continuous Leontief weights.
 
     Parameters
     ----------
-    years : iterable
-        Years for the output timeseries.
-    kappa : float
-        Org services capitalisation rate.
+    years     : iterable
+    kappa     : float  — org services capitalisation rate
+    use_cache : bool   — use cached IO tables and NABP/NABB data
+    cache_dir : str    — directory for cache files
 
     Returns
     -------
@@ -196,19 +237,29 @@ def compute_wage_employment_timeseries(years, kappa=0.6):
     """
     years = sorted(years)
 
-    # --- 1. fetch all industry-level data once ---
-    print("Fetching compensation (NABP36) ...")
-    df_comp = fetch_compensation()
-    print("Fetching hours (NABB36) ...")
-    df_hours = fetch_hours()
-    print("Fetching employees (NABB36) ...")
-    df_empl = fetch_employees()
+    # --- 1. fetch all industry-level data once (optionally cached) ---
+    if use_cache:
+        df_comp  = load_or_fetch_compensation(cache_dir=cache_dir)
+        df_hours = load_or_fetch_hours(cache_dir=cache_dir)
+        df_empl  = load_or_fetch_employees(cache_dir=cache_dir)
+        df_ls_all = load_or_fetch_industry_labor_shares(cache_dir=cache_dir)
+    else:
+        print("Fetching compensation (NABP36) ...")
+        df_comp = fetch_compensation()
+        print("Fetching hours (NABB36) ...")
+        df_hours = fetch_hours()
+        print("Fetching employees (NABB36) ...")
+        df_empl = fetch_employees()
+        df_ls_all = None
 
     rows = []
     for year in years:
         try:
             # --- Leontief weights for this year ---
-            w_parent = _get_parent_weights(year, kappa=kappa)
+            w_parent = _get_parent_weights(year, kappa=kappa,
+                                           df_ls_all=df_ls_all,
+                                           use_cache=use_cache,
+                                           cache_dir=cache_dir)
 
             # --- industry data for this year ---
             comp_yr  = df_comp[df_comp['year'] == year].set_index('branche_code')['compensation']
@@ -296,7 +347,7 @@ def plot_wage_employment(df, save_path='0_output/wage_employment.png'):
     ax.legend(
         [l1, l2],
         [r'Wage ratio $w_I/w_C$', r'Employment ratio $L_I/L_C$'],
-        loc='center right'
+        loc='lower left'
     )
 
     plt.tight_layout()
@@ -306,3 +357,38 @@ def plot_wage_employment(df, save_path='0_output/wage_employment.png'):
     plt.show()
 
     return fig, ax
+
+
+# ========== ========== ========== ========== ========== ==========
+# 7. Cached wrapper
+
+def load_or_compute_we_timeseries(years, kappa=0.6,
+                                   cache_path=None, cache_dir=CACHE_DIR, force=False):
+    """
+    Return compute_wage_employment_timeseries(...), reading from parquet cache
+    if available.
+
+    Parameters
+    ----------
+    years      : iterable of ints
+    kappa      : passed through
+    cache_path : explicit parquet path; defaults to
+                 <cache_dir>/we_timeseries_<start>_<end>.parquet
+    cache_dir  : directory for all cache files
+    force      : if True, ignore existing cache and recompute
+    """
+    years = sorted(years)
+    if cache_path is None:
+        fname = f"we_timeseries_{years[0]}_{years[-1]}.parquet"
+        cache_path = os.path.join(cache_dir, fname)
+
+    if not force and os.path.exists(cache_path):
+        print(f"Loading wage-employment timeseries from cache: {cache_path}")
+        return pd.read_parquet(cache_path)
+
+    df = compute_wage_employment_timeseries(years, kappa=kappa,
+                                             use_cache=True, cache_dir=cache_dir)
+    os.makedirs(cache_dir, exist_ok=True)
+    df.to_parquet(cache_path)
+    print(f"  Saved to {cache_path}")
+    return df

@@ -218,7 +218,7 @@ def plot_sweep(sweep_res, savepath='0_output/main_arg.png'):
     ax.stackplot(phi_grid_welf, w_C_Pw, w_I_Pw, r_K_Pw,
                  colors=[colors[1], colors[2], colors[0]], alpha=0.8)
     # ax.axvline(0.65, color="#4A4A5A", lw=2, ls='-.')
-    ax.axvspan(0.5, 1, color='gray', alpha=0.45, zorder=0)
+    ax.axvspan(0.66, 1.36, color='gray', alpha=0.6, zorder=0)
 
     ax.set_ylabel('Share of total (%)')
     ax.set_title(r'Welfare incidence — varying $\phi$', pad=35)
