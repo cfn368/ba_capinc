@@ -25,7 +25,7 @@ from dstapi import DstApi
 
 # ========== ========== ========== ========== ========== ==========
 #  helpers
-# ========== ========== ========== ========== ========== ==========
+
 def _code_token(x):
     s = pd.Series(x, dtype="string")
     return s.str.extract(r"^\s*([^ ]+)", expand=False)
@@ -33,7 +33,7 @@ def _code_token(x):
 
 # ========== ========== ========== ========== ========== ==========
 # 1. Fetch compensation by industry (all years)
-# ========== ========== ========== ========== ========== ==========
+
 def fetch_compensation():
     """
     D.1 compensation of employees from NABP36, current prices.
@@ -67,7 +67,7 @@ def fetch_compensation():
 
 # ========== ========== ========== ========== ========== ==========
 # 2. Fetch hours worked by industry (all years)
-# ========== ========== ========== ========== ========== ==========
+
 def fetch_hours():
     """
     Hours worked for employees from NABB36 (1,000 hours).
@@ -100,7 +100,7 @@ def fetch_hours():
 
 # ========== ========== ========== ========== ========== ==========
 # 3. Fetch number of employees by industry (all years)
-# ========== ========== ========== ========== ========== ==========
+
 def fetch_employees():
     """
     Number of employees from NABB36.
@@ -133,7 +133,7 @@ def fetch_employees():
 
 # ========== ========== ========== ========== ========== ==========
 # 4. Get continuous weights for a given year
-# ========== ========== ========== ========== ========== ==========
+
 def _get_parent_weights(year, kappa=0.6):
     """
     Run direct IO analysis for `year` and return continuous weights
@@ -176,7 +176,7 @@ def _get_parent_weights(year, kappa=0.6):
 
 # ========== ========== ========== ========== ========== ==========
 # 5. Compute w_I/w_C and L_I/L_C timeseries
-# ========== ========== ========== ========== ========== ==========
+
 def compute_wage_employment_timeseries(years, kappa=0.6):
     """
     Compute sectoral wage ratio w_I/w_C and employment ratio L_I/L_C
@@ -269,7 +269,7 @@ def compute_wage_employment_timeseries(years, kappa=0.6):
 
 # ========== ========== ========== ========== ========== ==========
 # 6. Plot: w_I/w_C and L_I/L_C on dual axes
-# ========== ========== ========== ========== ========== ==========
+
 def plot_wage_employment(df, save_path='0_output/wage_employment.png'):
     fig, ax = plt.subplots(1, 1, figsize=(12, 4))
 

@@ -1,9 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-###########################################################
+# ========== ========== ========== ========== ==========
 # 1. paper like wealth effects
-###########################################################
 
 def welfare_effects(m, sim_raw, tau_long, dlog_net_long,
                     T=25, tail=50, tau_ss=None):
@@ -156,9 +155,8 @@ def welfare_effects(m, sim_raw, tau_long, dlog_net_long,
         return ss, sim
 
 
-###########################################################
+# ========== ========== ========== ========== ==========
 # 3. incidence and elasticities
-###########################################################
 
 def inc_elas(m, sim, tau):
 

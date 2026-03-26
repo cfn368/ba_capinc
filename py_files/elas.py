@@ -1,11 +1,8 @@
 import numpy as np
 
-###########################################################
-# 1. Demand- and supply elasticities
-###########################################################
-
 # ========== ========== ========== ========== ========== 
 # 1. elasticities (q,K) 
+
 def dem_sup_elas(m, tau):
     
     # 1. get
@@ -64,6 +61,7 @@ def dem_sup_elas(m, tau):
     
 # ========== ========== ========== ========== ========== 
 # 2. Q/P tax elasticities
+
 def qp_tax_elas(m, out):
     
     # 1. get
@@ -87,6 +85,7 @@ def qp_tax_elas(m, out):
 
 # ========== ========== ========== ========== ========== 
 # 3. wage/rent tax elasticities
+
 def wr_tax_elas(m, elas_out, phi=None, epsD=None, epsS_LR=None):
     
     # 1. get elasticities

@@ -26,8 +26,8 @@ GENERAL = dict(
     phi=0.75,
 )
 # GENERAL = dict(
-#     betaK=0.49, betaL=0.51,
-#     alphaK=0.35,  alphaL=0.65,
+#     alphaL=0.39, alphaK=0.61,
+#     betaL=0.29,  betaK=0.71,
 #     phi=0.75,
 # )
 

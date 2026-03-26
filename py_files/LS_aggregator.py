@@ -1,26 +1,17 @@
-"""
-Sectoral labor share: GG-B methodology applied to Danish data
-=============================================================
-
-Uses direct final-demand weights (no Leontief inverse).
-Continuous expenditure weights instead of binary industry classification.
-
-References: Gomez & Gouin-Bonenfant (2025), Section 2.2, eq. (2.1)
-"""
-
+import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 import py_files.var_groups as var_groups
 
-from py_files.direct_NX import compute_direct_for_year
+from py_files.direct_NX import compute_direct_for_year, load_or_compute_year, CACHE_DIR
 from dstapi import DstApi
 
 
 # ========== ========== ========== ========== ========== ==========
 # 1. Fetch direct labor shares from NABP36 (industry × year)
-# ========== ========== ========== ========== ========== ==========
+
 def fetch_industry_labor_shares():
     """
     Fetch D.1 (compensation) and B.1g (GVA) by industry and year
@@ -70,7 +61,7 @@ def fetch_industry_labor_shares():
 
 # ========== ========== ========== ========== ========== ==========
 # 2. Direct labor share per industry
-# ========== ========== ========== ========== ========== ==========
+
 def consolidated_labor_shares(year_result, df_ls_year):
     """
     Compute the direct labor share (D1/GVA) for each sub-industry.
@@ -111,7 +102,7 @@ def consolidated_labor_shares(year_result, df_ls_year):
 
 # ========== ========== ========== ========== ========== ==========
 # 3. Sectoral LS with continuous weights  (eq. 2.1 in GG-B)
-# ========== ========== ========== ========== ========== ==========
+
 def sectoral_labor_shares(year_result, ls_cons, kappa=0.6):
     """
     Compute LS_C and LS_I using continuous Leontief-derived weights
@@ -180,27 +171,40 @@ def sectoral_labor_shares(year_result, ls_cons, kappa=0.6):
 
 # ========== ========== ========== ========== ========== ==========
 # 4. Full time-series
-# ========== ========== ========== ========== ========== ==========
-def compute_sectoral_ls_timeseries(years, kappa=0.6):
+
+def compute_sectoral_ls_timeseries(years, kappa=0.6,
+                                    use_cache=False, cache_dir=CACHE_DIR):
     """
     For each year:
-      1. Run Leontief (unchanged)
-      2. Fetch direct LS from NABP36
+      1. Run direct NX (optionally from cache)
+      2. Fetch direct LS from NABP36 (optionally from cache)
       3. Compute consolidated LS
       4. Aggregate with continuous weights
 
     Returns DataFrame indexed by year with columns:
         LS_C, LS_I, LS_I_minus_C
+
+    Parameters
+    ----------
+    use_cache : bool
+        If True, reads/writes per-year IO pickles and the NABP36 parquet
+        instead of hitting the API every run.
+    cache_dir : str
+        Directory for cache files (shared with direct_NX caches).
     """
 
-    # --- fetch all labor share data once ---
-    print("Fetching industry labor shares from NABP36 ...")
-    df_ls = fetch_industry_labor_shares()
+    # --- fetch all labor share data once (optionally cached) ---
+    if use_cache:
+        df_ls = load_or_fetch_industry_labor_shares(cache_dir=cache_dir)
+    else:
+        print("Fetching industry labor shares from NABP36 ...")
+        df_ls = fetch_industry_labor_shares()
 
     rows = []
     for year in years:
         try:
-            yr = compute_direct_for_year(year)
+            yr = load_or_compute_year(year, cache_dir=cache_dir) if use_cache \
+                 else compute_direct_for_year(year)
 
             # labor shares for this year (at parent level)
             df_ls_yr = df_ls[df_ls['year'] == year]
@@ -233,15 +237,19 @@ def compute_sectoral_ls_timeseries(years, kappa=0.6):
 
 # ========== ========== ========== ========== ========== ==========
 # 5. Diagnostic: inspect weights and direct LS for one year
-# ========== ========== ========== ========== ========== ==========
-def inspect_year(year, kappa=0.6):
+
+def inspect_year(year, kappa=0.6, use_cache=False, cache_dir=CACHE_DIR):
     """
     Returns a DataFrame aggregated to parent industry level with:
         direct_ls, consolidated_ls (= direct_ls here), w_C, w_I
     Useful for sanity-checking individual industries (e.g. pharma).
     """
-    df_ls = fetch_industry_labor_shares()
-    yr = compute_direct_for_year(year)
+    if use_cache:
+        df_ls = load_or_fetch_industry_labor_shares(cache_dir=cache_dir)
+        yr    = load_or_compute_year(year, cache_dir=cache_dir)
+    else:
+        df_ls = fetch_industry_labor_shares()
+        yr    = compute_direct_for_year(year)
     df_ls_yr = df_ls[df_ls['year'] == year]
 
     ls_cons = consolidated_labor_shares(yr, df_ls_yr)
@@ -316,3 +324,58 @@ def plot_ls_difference(df_ts, save_path='0_output/LS_consolidated.png'):
     plt.show()
 
     return fig, ax
+
+
+# ========== ========== ========== ========== ========== ==========
+# 7. Caching helpers
+
+def load_or_fetch_industry_labor_shares(cache_dir=CACHE_DIR, force=False):
+    """
+    Return fetch_industry_labor_shares(), reading from cache if available.
+    Saved to <cache_dir>/nabp36_labor_shares.parquet on first run.
+    """
+    path = os.path.join(cache_dir, "nabp36_labor_shares.parquet")
+    if not force and os.path.exists(path):
+        print("  Loading NABP36 labor shares from cache …")
+        return pd.read_parquet(path)
+
+    print("Fetching industry labor shares from NABP36 …")
+    df = fetch_industry_labor_shares()
+    os.makedirs(cache_dir, exist_ok=True)
+    df.to_parquet(path, index=False)
+    print(f"  Saved NABP36 to {path}")
+    return df
+
+
+def load_or_compute_ls_timeseries(years, kappa=0.6,
+                                   cache_path=None, cache_dir=CACHE_DIR, force=False):
+    """
+    Return compute_sectoral_ls_timeseries(...), reading from cache if available.
+
+    The timeseries DataFrame is stored as a parquet at cache_path.
+    Per-year IO results and NABP36 data are also cached automatically.
+
+    Parameters
+    ----------
+    years      : iterable of ints
+    kappa      : passed through to compute_sectoral_ls_timeseries
+    cache_path : explicit parquet path; defaults to
+                 <cache_dir>/ls_timeseries_<start>_<end>.parquet
+    cache_dir  : directory for all cache files
+    force      : if True, ignore existing cache and recompute
+    """
+    years = list(years)
+    if cache_path is None:
+        os.makedirs(cache_dir, exist_ok=True)
+        tag = f"{min(years)}_{max(years)}"
+        cache_path = os.path.join(cache_dir, f"ls_timeseries_{tag}.parquet")
+
+    if not force and os.path.exists(cache_path):
+        print(f"Loading LS timeseries from {cache_path} …")
+        return pd.read_parquet(cache_path)
+
+    df = compute_sectoral_ls_timeseries(years, kappa=kappa,
+                                        use_cache=True, cache_dir=cache_dir)
+    df.to_parquet(cache_path)
+    print(f"Saved LS timeseries to {cache_path}")
+    return df

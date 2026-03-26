@@ -1,3 +1,5 @@
+import os
+import pickle
 import pandas as pd
 import numpy as np
 import py_files.var_groups as var_groups
@@ -5,20 +7,16 @@ import matplotlib.pyplot as plt
 
 from dstapi import DstApi
 
+CACHE_DIR = "0_intermediate/direct_NX_cache"
+
 
 # ========== ========== ========== ========== ========== ==========
 # 1. Direct final-demand analysis for a specific year (NX-extended, GG-B methodology)
 #    No Leontief inverse — output requirements = direct final demand from IO table.
-#    This avoids the overcounting of investment that arises when multiplying by (I-A)^{-1}.
-# ========== ========== ========== ========== ========== ==========
+
 def compute_direct_for_year(year):
     """
     Direct final-demand analysis for a single year.
-
-    Identical data fetching and share definitions as compute_leontief_for_year(),
-    but output requirements are taken directly from the IO final-demand columns
-    (Y) rather than from L @ Y.  This removes the Leontief multiplier and the
-    associated double-counting of investment goods embedded in intermediates.
 
     Args:
         year: Year to analyze (int or str)
@@ -242,7 +240,7 @@ def compute_direct_for_year(year):
 
 # ========== ========== ========== ========== ========== ==========
 # 2. Classify by investment type with organisational services adjustment
-# ========== ========== ========== ========== ========== ==========
+
 def classify_investment_by_type(year_result, kappa=0.6):
     """
     Classify investment by type for a single year result.
@@ -312,7 +310,7 @@ def classify_investment_by_type(year_result, kappa=0.6):
 
 # ========== ========== ========== ========== ========== ==========
 # 3. GDP data
-# ========== ========== ========== ========== ========== ==========
+
 def fetch_gdp_data(years):
     """
     Fetch GDP data from Danish Statistics for specified years.
@@ -346,17 +344,22 @@ def fetch_gdp_data(years):
 
 # ========== ========== ========== ========== ========== ==========
 # 4. Timeseries
-# ========== ========== ========== ========== ========== ==========
-def compute_investment_timeseries(years, kappa=0.6, normalize_by_gdp=True):
+
+def compute_investment_timeseries(years, kappa=0.6, normalize_by_gdp=True,
+                                   use_cache=False, cache_dir=CACHE_DIR):
     """
     Compute investment composition over multiple years.
+    Set use_cache=True to read/write per-year pickles instead of hitting the API.
     """
 
     results = []
 
     for year in years:
         try:
-            year_result = compute_direct_for_year(year)
+            if use_cache:
+                year_result = load_or_compute_year(year, cache_dir=cache_dir)
+            else:
+                year_result = compute_direct_for_year(year)
             investment_shares = classify_investment_by_type(year_result, kappa)
             results.append(investment_shares)
         except Exception as e:
@@ -388,7 +391,7 @@ def compute_investment_timeseries(years, kappa=0.6, normalize_by_gdp=True):
 
 # ========== ========== ========== ========== ========== ==========
 # 5. Plot as fraction of GDP
-# ========== ========== ========== ========== ========== ==========
+
 def plot_investment_composition(investment_timeseries, as_pct_gdp=True):
     """
     Create stacked area plot of investment composition.
@@ -464,7 +467,7 @@ def plot_investment_composition(investment_timeseries, as_pct_gdp=True):
 
 # ========== ========== ========== ========== ========== ==========
 # 6. Aggregate use shares to parent level
-# ========== ========== ========== ========== ========== ==========
+
 def aggregate_use_shares_to_parent(year_result):
     """
     Aggregate use shares to parent industry level.
@@ -488,3 +491,74 @@ def aggregate_use_shares_to_parent(year_result):
     ).reset_index()
 
     return parent_shares
+
+
+# ========== ========== ========== ========== ========== ==========
+# 7. Caching helpers
+
+def _year_pickle_path(year, cache_dir):
+    return os.path.join(cache_dir, f"year_{year}.pkl")
+
+
+def load_or_compute_year(year, cache_dir=CACHE_DIR, force=False):
+    """
+    Return compute_direct_for_year(year), reading from cache if available.
+
+    Parameters
+    ----------
+    year       : int
+    cache_dir  : directory for pickle files (created if missing)
+    force      : if True, re-fetch from API even when a cache file exists
+
+    The result is saved to  <cache_dir>/year_<year>.pkl  on first run.
+    """
+    path = _year_pickle_path(year, cache_dir)
+    if not force and os.path.exists(path):
+        print(f"  Loading year {year} from cache …")
+        with open(path, "rb") as f:
+            return pickle.load(f)
+
+    result = compute_direct_for_year(year)
+    os.makedirs(cache_dir, exist_ok=True)
+    with open(path, "wb") as f:
+        pickle.dump(result, f)
+    print(f"  Saved year {year} to cache.")
+    return result
+
+
+def load_or_compute_timeseries(years, kappa=0.6, normalize_by_gdp=True,
+                                cache_path=None, cache_dir=CACHE_DIR, force=False):
+    """
+    Return compute_investment_timeseries(...), reading from cache if available.
+
+    The timeseries DataFrame is stored as a single parquet file at cache_path.
+    Per-year raw results are also cached as pickles (via load_or_compute_year),
+    so individual years are never re-fetched.
+
+    Parameters
+    ----------
+    years           : iterable of ints
+    kappa           : capitalisation rate passed to classify_investment_by_type
+    normalize_by_gdp: passed through
+    cache_path      : explicit parquet path; defaults to
+                      <cache_dir>/timeseries_<start>_<end>.parquet
+    cache_dir       : directory for per-year pickles
+    force           : if True, ignore existing cache files and recompute
+    """
+    years = list(years)
+    if cache_path is None:
+        os.makedirs(cache_dir, exist_ok=True)
+        tag = f"{min(years)}_{max(years)}"
+        cache_path = os.path.join(cache_dir, f"timeseries_{tag}.parquet")
+
+    if not force and os.path.exists(cache_path):
+        print(f"Loading timeseries from {cache_path} …")
+        return pd.read_parquet(cache_path)
+
+    df = compute_investment_timeseries(
+        years, kappa=kappa, normalize_by_gdp=normalize_by_gdp,
+        use_cache=True, cache_dir=cache_dir,
+    )
+    df.to_parquet(cache_path)
+    print(f"Saved timeseries to {cache_path}")
+    return df

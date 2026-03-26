@@ -34,6 +34,10 @@ except Exception:  # optional dependency
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
+from matplotlib.lines   import Line2D
+from matplotlib.patches import Patch
+
+from scipy.interpolate import interp1d
 
 # --- your project ---
 from old.capinc import CapIncModel
@@ -46,6 +50,11 @@ import py_files.LS_aggregator as sls
 import py_files.wage_employment as we
 
 from py_files.capinc_single import CapIncModel_single
+import py_files.elas as elas
+from py_files.QP_diagram import make_figure
+from py_files.IRF import plot_irf
+from py_files.sweep import run_sweeps, plot_sweep, print_elas
+from py_files.LS_aggregator import load_or_compute_ls_timeseries
 
 
 def enable_autoreload(mode: int = 2) -> None:
@@ -115,7 +124,11 @@ __all__ = [
     # common modules/objects
     "np", "pd", "plt", "mticker", "math", "StringIO", "requests",
     "dataclass", "display", "DstApi", "reduce", "inv",
+    "Line2D", "Patch", "interp1d",
     # project imports
     "CapIncModel", "shocks", "build_output", "var_groups",
-    "build_output_single", "CapIncModel_single", "il",'sls','we'
+    "build_output_single", "CapIncModel_single", "il", "sls", "we",
+    "elas", "make_figure", "plot_irf",
+    "run_sweeps", "plot_sweep", "print_elas",
+    "load_or_compute_ls_timeseries",
 ]
