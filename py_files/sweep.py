@@ -173,12 +173,12 @@ def plot_sweep(sweep_res, savepath='0_output/main_arg.png'):
     total_Pm = w_C_Pm + w_I_Pm + r_K_Pm
 
     legend_handles = [
-        Patch(color=colors[0], alpha=0.9, label=r'Capitalists ($r_K$)'),
         Line2D([0], [0], color='gray', lw=2, ls='-',  label=r'Varying $\varepsilon^S$'),
-        Patch(color=colors[2], alpha=0.9, label=r'Investment workers ($w_I$)'),
+        Patch(color=colors[0], alpha=0.9, label=r'Capitalists ($r_K$)'),
         Line2D([0], [0], color='gray', lw=2, ls='--', alpha=0.5, label=r'Varying $\phi$'),
-        Patch(color=colors[1], alpha=0.9, label=r'Consumption workers ($w_C$)'),
+        Patch(color=colors[2], alpha=0.9, label=r'Investment workers ($w_I$)'),
         Patch(color='gray', alpha=0.15, label=r'Calibration area'),
+        Patch(color=colors[1], alpha=0.9, label=r'Consumption workers ($w_C$)'),
     ]
 
     fig, axes = plt.subplots(1, 2, figsize=(12, 7))

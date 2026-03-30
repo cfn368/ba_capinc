@@ -36,7 +36,7 @@ def plot_irf(sim1, sim2, sim3, sim_welfare, T_plot, C_ss, savepath="0_output/sim
     S2 = trunc_pack(sim2)
     S3 = trunc_pack(sim3)
 
-    keys = ["tau", "q", "pI", "K", "sK", "sL", "wC", "wI"]
+    keys = ["tau", "q", "pI", "sK", "sL", "wC", "wI", "K"]
     keys = [k for k in keys if k in S1 and k in S2]
 
     welfare_keys = [

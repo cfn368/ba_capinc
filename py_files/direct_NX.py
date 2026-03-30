@@ -239,7 +239,46 @@ def compute_direct_for_year(year):
 
 
 # ========== ========== ========== ========== ========== ==========
-# 2. Classify by investment type with organisational services adjustment
+# 2. Leontief extension: replace direct output requirements with L·f
+
+def add_leontief_output_requirements(year_result):
+    """
+    Takes an existing year_result dict (from compute_direct_for_year) and
+    returns a copy with 'output_requirements' replaced by Leontief-derived
+    total output requirements:  x^S = L · f^S,  where L = (I - A)^{-1}.
+
+    All other keys (Z, X, Y, use_shares) are unchanged.
+    The Leontief inverse L is added under key 'L'.
+    """
+    Z = year_result['Z']
+    X = year_result['X']
+    Y = year_result['Y']
+
+    # Technical coefficients A_ij = Z_ij / X_j
+    X_safe = X.replace(0, np.nan)
+    A = Z.div(X_safe, axis=1).fillna(0)
+
+    # Leontief inverse L = (I - A)^{-1}
+    n = len(A)
+    L = pd.DataFrame(
+        np.linalg.inv(np.eye(n) - A.values),
+        index=A.index, columns=A.columns,
+    )
+
+    # Total output requirements per final demand category
+    out_req = pd.DataFrame({
+        'C': L.values @ Y['C'].values,
+        'G': L.values @ Y['G'].values,
+        'I': L.values @ Y['I'].values,
+        'X': L.values @ Y['X'].values,
+    }, index=A.index)
+
+    result = {**year_result, 'L': L, 'output_requirements': out_req}
+    return result
+
+
+# ========== ========== ========== ========== ========== ==========
+# 3. Classify by investment type with organisational services adjustment
 
 def classify_investment_by_type(year_result, kappa=0.6):
     """

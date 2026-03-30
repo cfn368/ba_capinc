@@ -14,15 +14,15 @@ class CapIncModel_single:
         
         # DK calib 
         # param:    a_L     a_K     b_L     b_K     phi
-        # base:    0.61    0.39    0.71    0.29    0.75
-        # 1970:    0.59    0.41    0.65    0.35    1.00
-        # 2020:    0.62    0.38    0.67    0.33    0.50
+        # base:    0.60    0.40    0.67    0.33    0.75
+        # 1970:    0.56    0.44    0.67    0.33    1.00
+        # 2020:    0.61    0.39    0.66    0.34    0.50
         
-        self.alphaL     = 0.61
-        self.alphaK     = 0.39
+        self.alphaL     = 0.60
+        self.alphaK     = 0.40
         
-        self.betaL      = 0.71  
-        self.betaK      = 0.29
+        self.betaL      = 0.67  
+        self.betaK      = 0.33
         
         self.mu         = 0.26  # labour adjustment cost param target
         self.phi        = 0.75  # calibration target

@@ -108,7 +108,7 @@ def draw_baseline(ax):
     _mark_eq(ax, 1.0, 1.0, K_new, q_new)
 
     ax.text(0.97, 0.05,
-            "$\\varepsilon^S = 1.44$\n$\\varepsilon^D = 1.49$".format(eps_S, eps_D),
+            "$\\varepsilon^S = 1.56$\n$\\varepsilon^D = 1.44$".format(eps_S, eps_D),
             transform=ax.transAxes, ha="right", va="bottom",
             bbox=dict(boxstyle="round,pad=0.3", fc="white", alpha=0.85, ec="#bbb"))
 
