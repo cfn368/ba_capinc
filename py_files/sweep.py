@@ -183,7 +183,7 @@ def plot_sweep(sweep_res, savepath='0_output/main_arg.png'):
 
     fig, axes = plt.subplots(1, 2, figsize=(12, 7))
 
-    # ========== ========== ========== ========== ==========
+# ========== ========== ========== ========== ==========
     # Left: marginal tax elasticities sweep 
     ax = axes[0]
 
@@ -196,20 +196,15 @@ def plot_sweep(sweep_res, savepath='0_output/main_arg.png'):
     ax.plot(epsS_grid, w_I_S, color=colors[2], lw=2, ls='-')
     ax.plot(epsS_grid, r_K_S, color=colors[0], lw=2, ls='-')
 
-    # ax.axvline(0.65, color="#4A4A5A", lw=2, ls='-.')
     ax.axvspan(0.5, 1, color='gray', alpha=0.15, zorder=0)
 
     ax.set_xticks([0, 5, 10, 15, 20])
-    ax.set_xticklabels([r'$\phi=0$', r'$5$', r'$10$', r'$15$', r'$20$'])
+    ax.set_xticklabels([r'$0$', r'$5$', r'$10$', r'$15$', r'$20$'])
+    ax.set_xlabel(r'$\phi$ and $\varepsilon^S$')
     ax.set_ylabel('Tax elasticity')
     ax.set_title(r'Tax elasticity — varying $\varepsilon^S$ or $\phi$', pad=10)
     ax.set_xlim(0, 20)
     ax.grid(True, alpha=0.3)
-
-    ax2 = ax.twiny()
-    ax2.set_xlim(0, 20)
-    ax2.set_xticks([0, 5, 10, 15, 20])
-    ax2.set_xticklabels([r'$\varepsilon^S=0$', r'$5$', r'$10$', r'$15$', r'$20$'])
 
     # ========== ========== ========== ========== ==========
     # Right: welfare incidence sweep
@@ -217,22 +212,22 @@ def plot_sweep(sweep_res, savepath='0_output/main_arg.png'):
 
     ax.stackplot(phi_grid_welf, w_C_Pw, w_I_Pw, r_K_Pw,
                  colors=[colors[1], colors[2], colors[0]], alpha=0.8)
-    # ax.axvline(0.65, color="#4A4A5A", lw=2, ls='-.')
     ax.axvspan(0.66, 1.36, color='gray', alpha=0.6, zorder=0)
 
+    ax.set_xlabel(r'$\phi$')
     ax.set_ylabel('Share of total (%)')
-    ax.set_title(r'Welfare incidence — varying $\phi$', pad=35)
+    ax.set_title(r'Welfare incidence — varying $\phi$', pad=10)
     ax.set_xlim(0, 3)
     ax.set_ylim(0, 100)
     ax.grid(True, alpha=0.6)
 
     ax.set_xticks([0, 1.0, 2.0, 3.0])
-    ax.set_xticklabels([r'$\phi=0$', r'$1$', r'$2$', r'$3$'])
+    ax.set_xticklabels([r'$0$', r'$1$', r'$2$', r'$3$'])
 
     # ========== ========== ========== ========== ==========
     # legend
     fig.legend(handles=legend_handles,
-               loc='lower center', bbox_to_anchor=(0.5, 0.02),
+               loc='lower center', bbox_to_anchor=(0.5, 0.00),
                frameon=True, ncol=3)
 
     plt.tight_layout()
