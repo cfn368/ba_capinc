@@ -1,31 +1,31 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-# ========== ========== ========== ========== ==========
+# ==================== ==================== ==================== ====================
 # 1. paper like wealth effects
 
 def welfare_effects(m, sim_raw, tau_long, dlog_net_long,
                     T=25, tail=50, tau_ss=None):
 
-        # 0) horizons
+        # 0. horizons
         T = int(T); tail = int(tail)
         T_solve = int(T + tail)
         sl_full = slice(0, T_solve + 1)
         sl_plot = slice(0, T + 1)
 
-        # 1) steady state
+        # 1. steady state
         ss = m.solve_steady_state(tau=float(tau_ss))
 
-        # 2) coerce sim to full horizon arrays (NO truncation yet)
+        # 2. coerce sim to full horizon arrays (NO truncation yet)
         sim_full = {
                 k: (np.asarray(v)[sl_full] if isinstance(v, (list, np.ndarray)) and len(v) >= T_solve + 1 else v)
                 for k, v in sim_raw.items()
         }
 
-        # 3) plot horizon index
+        # 3. plot horizon index
         h = np.arange(T + 1)
 
-        # 4) percent deviations for plotting (computed from full then sliced)
+        # 4. percent deviations for plotting (computed from full then sliced)
         pct = lambda x, xss: 100 * np.log(np.asarray(x, float) / float(xss))
         dq_full  = pct(sim_full["q"],  ss["q"])
         dpI_full = pct(sim_full["pI"], ss["pI"])
@@ -35,7 +35,7 @@ def welfare_effects(m, sim_raw, tau_long, dlog_net_long,
         dpI = dpI_full[sl_plot]
         dK  = dK_full[sl_plot]
 
-        # 5) SS static (baseline objects)
+        # 5. SS static (baseline objects)
         m.z_last[:] = 0.0
         st_ss = m._static(ss["K"], ss["q"], tau=float(tau_ss))
 
@@ -43,14 +43,14 @@ def welfare_effects(m, sim_raw, tau_long, dlog_net_long,
         wC_ss, LC_ss = float(st_ss["wC"]), float(st_ss["LC"])
         wI_ss, LI_ss = float(st_ss["wI"]), float(st_ss["LI"])
 
-        # 6) FULL-HORIZON welfare paths
+        # 6. FULL-HORIZON welfare paths
         # d log wages vs baseline SS (full horizon)
         dlog_wC_full = np.log(np.asarray(sim_full["wC"], float) / wC_ss)
         dlog_wI_full = np.log(np.asarray(sim_full["wI"], float) / wI_ss)
 
         # worker welfare-flow paths (envelope-consistent, SS weights)
-        wg_C_full = (wC_ss * LC_ss) * dlog_wC_full 
-        wg_I_full = (wI_ss * LI_ss) * dlog_wI_full 
+        wg_C_full = (wC_ss * LC_ss) * dlog_wC_full
+        wg_I_full = (wI_ss * LI_ss) * dlog_wI_full
 
         wg_L_full = wg_C_full + wg_I_full
 
@@ -63,19 +63,19 @@ def welfare_effects(m, sim_raw, tau_long, dlog_net_long,
         pI_ss = float(st_ss["pI"])
         I_ss  = float(st_ss["I"])
         Y_ss  = C_ss + pI_ss * I_ss
-        WB_ss = wC_ss * LC_ss + wI_ss * LI_ss 
+        WB_ss = wC_ss * LC_ss + wI_ss * LI_ss
         D_ss  = (1.0 - float(tau_ss)) * (Y_ss - WB_ss)   # scalar
 
-        WG_total_full = D_ss * dlog_net_full 
+        WG_total_full = D_ss * dlog_net_full
         wg_K_full = WG_total_full - wg_L_full
 
-        # 7) Table values: use FULL horizon sums (or PV if you later add discounting)
-        
+        # 7. Table values: use FULL horizon sums (or PV if you later add discounting)
+
         # add discounting
         t_full = np.arange(T_solve + 1)
         beta = 1/(1 + m.r) ** t_full
-        
-        # 6b) discounted welfare flow paths
+
+        # 6b. discounted welfare flow paths
         wg_C_disc = beta * wg_C_full
         wg_I_disc = beta * wg_I_full
         wg_K_disc = beta * wg_K_full
@@ -97,13 +97,13 @@ def welfare_effects(m, sim_raw, tau_long, dlog_net_long,
         "WG_total_pctC":   100.0 * pv(WG_total_full) / C_norm,
         }
 
-        # 8) Plot arrays: slice AFTER computing full welfare
+        # 8. Plot arrays: slice AFTER computing full welfare
         # wC_pct = 100.0 * wg_C_full[sl_plot] / C_norm
         # wI_pct = 100.0 * wg_I_full[sl_plot] / C_norm
         # wK_pct = 100.0 * wg_K_full[sl_plot] / C_norm
         # WG_pct = 100.0 * WG_total_full[sl_plot] / C_norm
 
-        # 9) build sim dict for return (plot horizon only, but include full-table scalars)
+        # 9. build sim dict for return (plot horizon only, but include full-table scalars)
         sim = {k: (v[sl_plot] if isinstance(v, np.ndarray) and v.shape[0] == T_solve + 1 else v)
                 for k, v in sim_full.items()}
 
@@ -113,19 +113,19 @@ def welfare_effects(m, sim_raw, tau_long, dlog_net_long,
 
         # no discounting
         # sim["wg_C"] = wg_C_full[sl_plot]
-        # sim["wg_I"] = wg_I_full[sl_plot] 
+        # sim["wg_I"] = wg_I_full[sl_plot]
         # sim["wg_K"] = wg_K_full[sl_plot]
         # sim["WG_total_path"] = WG_total_full[sl_plot]
-        
+
         # discounting
         sim["wg_C"] = wg_C_disc[sl_plot]
         sim["wg_I"] = wg_I_disc[sl_plot]
         sim["wg_K"] = wg_K_disc[sl_plot]
         sim["WG_total_path"] = WG_disc[sl_plot]
 
-        sim["table"] = table  
+        sim["table"] = table
 
-        # 10) plot
+        # 10. plot
         # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4), constrained_layout=True)
 
         # ax1.plot(h, dq,  color='k', ls="-", lw=2, label="value of installed capital $q$")
@@ -155,13 +155,12 @@ def welfare_effects(m, sim_raw, tau_long, dlog_net_long,
         return ss, sim
 
 
-# ========== ========== ========== ========== ==========
+# ==================== ==================== ==================== ====================
 # 3. incidence and elasticities
 
 def inc_elas(m, sim, tau):
 
-        # ========== ========== ========== ========== ========== 
-        # 1. tax incidence 
+        # 1. tax incidence
         consump_w = sim["table"]["pv_wg_C"] / sim["table"]["pv_WG"]
         investm_w = sim["table"]["pv_wg_I"] / sim["table"]["pv_WG"]
         capital_o = sim["table"]["pv_wg_K"] / sim["table"]["pv_WG"]
@@ -178,13 +177,12 @@ def inc_elas(m, sim, tau):
         print(f"{'Investment workers':<22} {investm_w:>6.1%}")
         print(f"{'Capitalists':<22} {capital_o:>6.1%}")
 
-        # ========== ========== ========== ========== ========== 
-        # 2. elasticities (q,K) 
+        # 2. elasticities (q,K)
         ss = m.solve_steady_state(tau=tau)
         vals = m.static_block_sigmoid(K=ss['K'], q=ss['q'], tau=ss['tau'])
 
         A_theta = np.array([
-        [ 
+        [
                 vals['sK']/(1-vals['sK']) * (m.alphaK-1) + (m.betaK-1)  ,
                 vals['sL']/(1-vals['sL']) * m.alphaL + m.betaL          ,
                 1.0
@@ -210,7 +208,7 @@ def inc_elas(m, sim, tau):
 
         supply_vec = np.array([ m.betaK, m.betaL, 0.0 ])
         demand_vec = np.array([
-        vals['sK']/(1-vals['sK'])                                   , 
+        vals['sK']/(1-vals['sK'])                                   ,
         -m.alphaL/(1-m.alphaK) * vals['sL']/(1-vals['sL'])              ,
         0.0
         ])
@@ -227,8 +225,7 @@ def inc_elas(m, sim, tau):
         print(f"{'epsS_SR':<10} {epsS_SR:>8.2f}")
         print(f"{'epsD':<10} {epsD:>8.2f}")
 
-        # ========== ========== ========== ========== ========== 
-        # tax elasticities
+        # 3. tax elasticities
         price_elas  =  1 / (1-m.alphaK) * 1 / (epsS_LR + epsD)
         quant_elas  =  1 / (1-m.alphaK) * epsS_LR / (epsS_LR + epsD)
         wealth_elas = price_elas + quant_elas
@@ -264,7 +261,3 @@ def inc_elas(m, sim, tau):
             "x0": x0,
             "x_theta": x_theta,
         }
-
-
-
-

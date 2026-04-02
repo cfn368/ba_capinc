@@ -2,6 +2,9 @@
 sweep.py — epsS and phi sweep computations + figure for 3_phi_sweep.ipynb
 """
 import colorsys
+import hashlib
+import pickle
+from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as mc
@@ -12,7 +15,7 @@ from matplotlib.patches import Patch
 import py_files.elas as elas
 import py_files.build_output_single as build_output_single
 
-# ========== ========== ========== ========== ==========
+# ==================== ==================== ==================== ====================
 # 0. helper
 
 def lighten_color(color, amount=0.5):
@@ -24,6 +27,9 @@ def lighten_color(color, amount=0.5):
     return colorsys.hls_to_rgb(c[0], 1 - amount * (1 - c[1]), c[2])
 
 
+# ==================== ==================== ==================== ====================
+# 0b. print elasticities
+
 def print_elas(out_base):
     """Pretty-print demand and supply elasticities from dem_sup_elas output."""
     w = 32
@@ -34,8 +40,8 @@ def print_elas(out_base):
     print("─" * w)
 
 
-# ========== ========== ========== ========== ==========
-# 1. sweep rountines
+# ==================== ==================== ==================== ====================
+# 1. sweep routines
 
 def run_epsS_sweep(m, out_base, epsS_grid):
     """Marginal (price) elasticities over a grid of epsS_LR values."""
@@ -145,7 +151,54 @@ def run_sweeps(m, out_base, tau_long, dlog_net_long, tauT,
     )
 
 
-# ========== ========== ========== ========== ==========
+def _sweep_cache_key(m, out_base, tau_long, dlog_net_long, tauT,
+                     T, tail, tau_ss, epsS_grid, phi_grid, phi_grid_welf):
+    """SHA-1 fingerprint of all inputs that determine sweep results."""
+    h = hashlib.sha1()
+    for arr in (tau_long, dlog_net_long, epsS_grid, phi_grid, phi_grid_welf):
+        h.update(np.asarray(arr).tobytes())
+    for v in (tauT, T, tail, tau_ss,
+              out_base['epsS_LR'], out_base['epsD'],
+              m.phi, m.alphaK, m.alphaL, m.betaK, m.betaL,
+              m.delta):
+        h.update(str(v).encode())
+    return h.hexdigest()
+
+
+def load_or_compute_sweeps(m, out_base, tau_long, dlog_net_long, tauT,
+                           T, tail, tau_ss=0.0,
+                           epsS_grid=None, phi_grid=None, phi_grid_welf=None,
+                           phi_restore=1.35,
+                           cache_dir='0_intermediate', force=False):
+    """
+    Cached wrapper around run_sweeps. Saves results to
+    ``<cache_dir>/sweep_cache_<hash>.pkl`` and reloads on subsequent calls
+    with the same inputs. Pass ``force=True`` to recompute regardless.
+    """
+    if epsS_grid     is None: epsS_grid     = np.linspace(0.001, 20,  2000)
+    if phi_grid      is None: phi_grid      = np.linspace(0.001, 20,   500)
+    if phi_grid_welf is None: phi_grid_welf = np.linspace(0.001,  3,   150)
+
+    cache_path = Path(cache_dir) / f"sweep_cache_{_sweep_cache_key(m, out_base, tau_long, dlog_net_long, tauT, T, tail, tau_ss, epsS_grid, phi_grid, phi_grid_welf)}.pkl"
+
+    if not force and cache_path.exists():
+        print(f"Loading sweep results from cache ({cache_path.name}) …")
+        with open(cache_path, 'rb') as f:
+            return pickle.load(f)
+
+    res = run_sweeps(m, out_base, tau_long, dlog_net_long, tauT,
+                     T, tail, tau_ss,
+                     epsS_grid=epsS_grid, phi_grid=phi_grid,
+                     phi_grid_welf=phi_grid_welf, phi_restore=phi_restore)
+
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(cache_path, 'wb') as f:
+        pickle.dump(res, f)
+    print(f"Sweep results cached to {cache_path.name}")
+    return res
+
+
+# ==================== ==================== ==================== ====================
 # 2. plotting routine
 
 def plot_sweep(sweep_res, savepath='0_output/main_arg.png'):
@@ -183,8 +236,7 @@ def plot_sweep(sweep_res, savepath='0_output/main_arg.png'):
 
     fig, axes = plt.subplots(1, 2, figsize=(12, 7))
 
-# ========== ========== ========== ========== ==========
-    # Left: marginal tax elasticities sweep 
+    # 1. Left: marginal tax elasticities sweep
     ax = axes[0]
 
     phi_mapped = np.linspace(epsS_grid[0], epsS_grid[-1], len(phi_grid))
@@ -206,8 +258,7 @@ def plot_sweep(sweep_res, savepath='0_output/main_arg.png'):
     ax.set_xlim(0, 20)
     ax.grid(True, alpha=0.3)
 
-    # ========== ========== ========== ========== ==========
-    # Right: welfare incidence sweep
+    # 2. Right: welfare incidence sweep
     ax = axes[1]
 
     ax.stackplot(phi_grid_welf, w_C_Pw, w_I_Pw, r_K_Pw,
@@ -224,8 +275,7 @@ def plot_sweep(sweep_res, savepath='0_output/main_arg.png'):
     ax.set_xticks([0, 1.0, 2.0, 3.0])
     ax.set_xticklabels([r'$0$', r'$1$', r'$2$', r'$3$'])
 
-    # ========== ========== ========== ========== ==========
-    # legend
+    # 3. legend
     fig.legend(handles=legend_handles,
                loc='lower center', bbox_to_anchor=(0.5, 0.00),
                frameon=True, ncol=3)

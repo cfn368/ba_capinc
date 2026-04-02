@@ -1,7 +1,8 @@
 import pandas as pd
 
-# ========== ========== ========== ========== ==========
+# ==================== ==================== ==================== ====================
 # 1. simulation variables
+
 model_var = {
     'K':        r'$K$',
     'q':        r'$q$',
@@ -22,33 +23,33 @@ model_var = {
     # 'w2C':      r'$w_{2C}$',
     # 'w1I':      r'$w_{I}$',
     # 'w2I':      r'$w_{2I}$',
-    
+
     'wC':       r'$w_{C}$',
     'wI':       r'$w_{I}$',
     'sL':       r'$s_{L}$',
     'LC':       r'$L_{C}$',
     'LI':       r'$L_{I}$',
 }
-    
-# ========== ========== ========== ========== ==========
+
+# ==================== ==================== ==================== ====================
 # 2. investment share
 
-# main categories
+# 1. main categories
 tilgange2_var = [
     'TA', 'TB', 'TCA', 'TCB', 'TCC', 'TCD', 'TCE', 'TCF', 'TCG', 'TCH', 'TCI',
     'TCJ', 'TCK', 'TCL', 'TCM', 'TD', 'TE', 'TF', 'TG', 'TH', 'TI', 'TJA',
     'TJB', 'TJC', 'TK', 'TLA', 'TLB', 'TMA', 'TMB', 'TMC', 'TN', 'TO', 'TP',
-    'TQA', 'TQB', 'TR', 'TSA', 'TSB'    
+    'TQA', 'TQB', 'TR', 'TSA', 'TSB'
 ]
 
 anveldelse_var = [
     'AA', 'AB', 'ACA', 'ACB', 'ACC', 'ACD', 'ACE', 'ACF', 'ACG', 'ACH', 'ACI',
     'ACJ', 'ACK', 'ACL', 'ACM', 'AD', 'AE', 'AF', 'AG', 'AH', 'AI', 'AJA',
     'AJB', 'AJC', 'AK', 'ALA', 'ALB', 'AMA', 'AMB', 'AMC', 'AN', 'AO', 'AP',
-    'AQA', 'AQB', 'AR', 'ASA', 'ASB'    
+    'AQA', 'AQB', 'AR', 'ASA', 'ASB'
 ]
 
-# link between sub and main categories
+# 2. link between sub and main categories
 sub_to_parent = {
     "01000": "A",  "02000": "A",  "03000": "A",  "06090": "B",  "10120": "CA",
     "13150": "CB", "16000": "CC", "17000": "CC", "18000": "CC", "19000": "CD",
@@ -66,17 +67,17 @@ sub_to_parent = {
     "94000": "SA", "95000": "SA", "96000": "SA", "97000": "SB",
 }
 
-# tangible or intangible
+# 3. tangible or intangible
 industry_classification = {
-    # Agriculture, forestry, fishing - tangible (physical goods)
+    # 1. Agriculture, forestry, fishing - tangible (physical goods)
     '01000': 'tangible',
     '02000': 'tangible',
     '03000': 'tangible',
-    
-    # Mining
+
+    # 2. Mining
     '06090': 'tangible',
-    
-    # Manufacturing - all tangible (physical goods production)
+
+    # 3. Manufacturing - all tangible (physical goods production)
     '10120': 'tangible',
     '13150': 'tangible',
     '16000': 'tangible',
@@ -96,105 +97,104 @@ industry_classification = {
     '30000': 'tangible',
     '31320': 'tangible',
     '33000': 'tangible',
-    
-    # Utilities - tangible
+
+    # 4. Utilities - tangible
     '35000': 'tangible',
     '36000': 'tangible',
     '37390': 'tangible',
-    
-    # Construction - tangible (structures)
+
+    # 5. Construction - tangible (structures)
     '41430': 'tangible',
-    
-    # Wholesale and retail trade - tangible (goods distribution)
+
+    # 6. Wholesale and retail trade - tangible (goods distribution)
     '45000': 'tangible',
     '46000': 'tangible',
     '47000': 'tangible',
-    
-    # Transportation - tangible
+
+    # 7. Transportation - tangible
     '49000': 'tangible',
     '50000': 'tangible',
     '51000': 'tangible',
     '52000': 'tangible',
     '53000': 'tangible',
-    
-    # Accommodation and food service - tangible
+
+    # 8. Accommodation and food service - tangible
     '55560': 'tangible',
-    
-    # Publishing, TV, radio - intangible (intellectual property)
+
+    # 9. Publishing, TV, radio - intangible (intellectual property)
     '58000': 'intangible',
     '59600': 'intangible',
-    
-    # Telecommunications - intangible
+
+    # 10. Telecommunications - intangible
     '61000': 'intangible',
-    
-    # IT and information services - intangible
+
+    # 11. IT and information services - intangible
     '62630': 'intangible',
-    
-    # Financial and insurance - intangible
+
+    # 12. Financial and insurance - intangible
     '64000': 'intangible',
     '65000': 'intangible',
     '66000': 'intangible',
-    
-    # Real estate - tangible (structures/dwellings)
+
+    # 13. Real estate - tangible (structures/dwellings)
     '68100': 'tangible',
     '68300': 'tangible',
     '68203': 'tangible',
     '68204': 'tangible',
-    
-    # Knowledge-based / professional services - intangible (organizational capital)
+
+    # 14. Knowledge-based / professional services - intangible (organizational capital)
     '69700': 'organisational',  # Legal, accounting, management consultancy
     '71000': 'organisational',  # Architectural and engineering activities
-    
-    # R&D - intangible
+
+    # 15. R&D - intangible
     '72001': 'intangible',
     '72002': 'intangible',
-    
-    # Advertising and other business services - intangible (organizational capital)
+
+    # 16. Advertising and other business services - intangible (organizational capital)
     '73000': 'organisational',
     '74750': 'organisational',
-    
-    # Administrative/operational services - intangible (organizational capital)
+
+    # 17. Administrative/operational services - intangible (organizational capital)
     '77000': 'tangible',        # Rental and leasing (of physical assets)
     '78000': 'organisational',  # Employment activities
     '79000': 'intangible',      # Travel agent activities
     '80820': 'organisational',  # Security, building services, other business support
-    
-    # Public administration - intangible
+
+    # 18. Public administration - intangible
     '84202': 'intangible',
     '84101': 'intangible',
-    
-    # Education - intangible
+
+    # 19. Education - intangible
     '85202': 'intangible',
     '85101': 'intangible',
-    
-    # Health and social work - intangible
+
+    # 20. Health and social work - intangible
     '86000': 'intangible',
     '87880': 'intangible',
-    
-    # Arts, entertainment, recreation - intangible
+
+    # 21. Arts, entertainment, recreation - intangible
     '90920': 'intangible',
     '93000': 'intangible',
-    
-    # Other service activities - intangible
+
+    # 22. Other service activities - intangible
     '94000': 'intangible',
     '95000': 'tangible',   # Repair of personal goods (physical)
     '96000': 'intangible',
-    
-    # Household employers
+
+    # 23. Household employers
     '97000': 'intangible',
 }
 
-# Map industries to investment TYPE (not tangible/intangible)
-
+# 4. investment type
 investment_type = {
-    # Structures
+    # 1. Structures
     '41430': 'structures',
     '68100': 'structures',
     '68300': 'structures',
     '68203': 'structures',
     '68204': 'structures',
 
-    # Equipment
+    # 2. Equipment
     '01000': 'equipment',  '02000': 'equipment',  '03000': 'equipment',
     '06090': 'equipment',
     '10120': 'equipment',  '13150': 'equipment',  '16000': 'equipment',
@@ -212,7 +212,7 @@ investment_type = {
     '77000': 'equipment',
     '95000': 'equipment',
 
-    # Intellectual property
+    # 3. Intellectual property
     '21000': 'intellectual_property',  # Pharma (R&D-driven)
     '58000': 'intellectual_property',
     '59600': 'intellectual_property',
@@ -229,7 +229,7 @@ investment_type = {
     '94000': 'intellectual_property',  '96000': 'intellectual_property',
     '97000': 'intellectual_property',
 
-    # Organizational services
+    # 4. Organizational services
     '69700': 'organizational',
     '71000': 'organizational',
     '73000': 'organizational',
@@ -239,7 +239,7 @@ investment_type = {
 }
 
 
-# ========== ========== ========== ========== ==========
+# ==================== ==================== ==================== ====================
 # 3. labour share
 
 mothers = pd.Index([
@@ -284,7 +284,7 @@ subs = pd.Index([
     'MC Advertising and other business services',
     'N Travel agents, cleaning, and other operationel services',
     'O Public administration, defence and compulsory social security',
-    # 'Of which: General government', 
+    # 'Of which: General government',
     'P Education',
     'QA Human health activities', 'QB Residential care',
     'R Arts, entertainment and recreation activities',
@@ -293,9 +293,9 @@ subs = pd.Index([
 ])
 
 
-# large dict
+# 1. large dict
 large_dict = {
-    'CC': 'Wood and paper products and printing',  
+    'CC': 'Wood and paper products and printing',
     'CG': 'Manufacture of plastic, glass and concrete',
     'CF': 'Pharmaceuticals',
     'CH': 'Basic metals and fabricated metal products',
@@ -311,7 +311,7 @@ large_dict = {
     'B': 'Mining and quarrying',
     'CA': 'Manufacture of food products, beverages and tobacco',
     'CB': 'Textiles and leather products',
-    'CD': 'Oil refinery etc.', 
+    'CD': 'Oil refinery etc.',
     'CE': 'Manufacture of chemicals',
     'CL': 'Transport equipment',
     'D': 'Electricity, gas, steam and air conditioning supply',
@@ -319,7 +319,7 @@ large_dict = {
     'G': 'Wholesale and retail trade',
     'H': 'Transportation',
     'I': 'Accommodation and food service activities',
-    'JA': 'Publishing, television and radio broadcasting', 
+    'JA': 'Publishing, television and radio broadcasting',
     'JB': 'Telecommunications',
     'K': 'Financial and insurance',
     'LA': 'Real estate activities and renting of non-residential',

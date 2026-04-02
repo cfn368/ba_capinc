@@ -35,7 +35,6 @@ BA/
 │   └── var_groups.py           # Variable mappings: model ↔ IO notation; investment
 │                               #   classification (structures, equipment, IP, org. capital)
 │
-├── 0_overview.ipynb            # Project progress and to-do tracking
 ├── 1_qp_mechanism.ipynb        # Capital market equilibrium diagram; Uzawa mechanism
 ├── 2_labour_shares.ipynb       # Sectoral labor share timeseries (1966–2024) with IO weights
 ├── 2_gross_investment.ipynb    # Intangible vs. tangible investment composition over time
@@ -48,8 +47,7 @@ BA/
 │   └── direct_NX_cache/        # Per-year IO results (pickle) and timeseries (parquet)
 ├── 0_output/                   # Generated figures (PNG)
 ├── 0_raw_data/                 # Raw DST data files
-├── 0_litterature/              # Literature (primary and secondary)
-└── old/                        # Archived notebooks and earlier model versions
+└── 0_litterature/              # Literature (primary and secondary)
 ```
 
 ---
@@ -152,7 +150,7 @@ Gomez, M. & Gouin-Bonenfant, E. (2025). *Human Capitalists.* Working paper.
 ## Citation
 
 ```
-Lindquist, L. (2025). Human Capitalists in The Intangible Era.
+Lindquist, L. (2026). Human Capitalists in The Intangible Era.
 Bachelor's thesis, University of Copenhagen.
 Supervisor: Søren Hove Ravn.
 ```

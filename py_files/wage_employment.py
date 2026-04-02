@@ -27,15 +27,15 @@ from py_files.LS_aggregator import (
 from dstapi import DstApi
 
 
-# ========== ========== ========== ========== ========== ==========
-#  helpers
+# ==================== ==================== ==================== ====================
+# 0. helpers
 
 def _code_token(x):
     s = pd.Series(x, dtype="string")
     return s.str.extract(r"^\s*([^ ]+)", expand=False)
 
 
-# ========== ========== ========== ========== ========== ==========
+# ==================== ==================== ==================== ====================
 # 1. Fetch compensation by industry (all years)
 
 def fetch_compensation():
@@ -69,7 +69,7 @@ def fetch_compensation():
     )
 
 
-# ========== ========== ========== ========== ========== ==========
+# ==================== ==================== ==================== ====================
 # 2. Fetch hours worked by industry (all years)
 
 def fetch_hours():
@@ -102,7 +102,7 @@ def fetch_hours():
     )
 
 
-# ========== ========== ========== ========== ========== ==========
+# ==================== ==================== ==================== ====================
 # 3. Fetch number of employees by industry (all years)
 
 def fetch_employees():
@@ -135,8 +135,8 @@ def fetch_employees():
     )
 
 
-# ========== ========== ========== ========== ========== ==========
-# cached NABB/NABP fetchers
+# ==================== ==================== ==================== ====================
+# 3b. cached NABB/NABP fetchers
 
 def load_or_fetch_compensation(cache_dir=CACHE_DIR, force=False):
     path = os.path.join(cache_dir, "nabb_compensation.parquet")
@@ -174,7 +174,7 @@ def load_or_fetch_employees(cache_dir=CACHE_DIR, force=False):
     return df
 
 
-# ========== ========== ========== ========== ========== ==========
+# ==================== ==================== ==================== ====================
 # 4. Get continuous weights for a given year
 
 def _get_parent_weights(year, kappa=0.6, df_ls_all=None, use_cache=False,
@@ -214,7 +214,7 @@ def _get_parent_weights(year, kappa=0.6, df_ls_all=None, use_cache=False,
     return w_parent
 
 
-# ========== ========== ========== ========== ========== ==========
+# ==================== ==================== ==================== ====================
 # 5. Compute w_I/w_C and L_I/L_C timeseries
 
 def compute_wage_employment_timeseries(years, kappa=0.6, use_cache=False,
@@ -237,7 +237,7 @@ def compute_wage_employment_timeseries(years, kappa=0.6, use_cache=False,
     """
     years = sorted(years)
 
-    # --- 1. fetch all industry-level data once (optionally cached) ---
+    # 1. fetch all industry-level data once (optionally cached)
     if use_cache:
         df_comp  = load_or_fetch_compensation(cache_dir=cache_dir)
         df_hours = load_or_fetch_hours(cache_dir=cache_dir)
@@ -255,13 +255,13 @@ def compute_wage_employment_timeseries(years, kappa=0.6, use_cache=False,
     rows = []
     for year in years:
         try:
-            # --- Leontief weights for this year ---
+            # 2. Leontief weights for this year
             w_parent = _get_parent_weights(year, kappa=kappa,
                                            df_ls_all=df_ls_all,
                                            use_cache=use_cache,
                                            cache_dir=cache_dir)
 
-            # --- industry data for this year ---
+            # 3. industry data for this year
             comp_yr  = df_comp[df_comp['year'] == year].set_index('branche_code')['compensation']
             hours_yr = df_hours[df_hours['year'] == year].set_index('branche_code')['hours']
             empl_yr  = df_empl[df_empl['year'] == year].set_index('branche_code')['employees']
@@ -270,7 +270,7 @@ def compute_wage_employment_timeseries(years, kappa=0.6, use_cache=False,
                 print(f"  {year}: missing NABP/NABB data, skipping")
                 continue
 
-            # --- wages: align on common codes with comp & hours ---
+            # 4. wages: align on common codes with comp & hours
             common_w = (w_parent.index
                         .intersection(comp_yr.index)
                         .intersection(hours_yr.index))
@@ -288,7 +288,7 @@ def compute_wage_employment_timeseries(years, kappa=0.6, use_cache=False,
             wage_C = (w_C * comp).sum() / (w_C * hrs).sum()
             wage_I = (w_I * comp).sum() / (w_I * hrs).sum()
 
-            # --- employment: align on common codes with employees ---
+            # 5. employment: align on common codes with employees
             common_e = w_parent.index.intersection(empl_yr.index)
             w_C_e = w_parent.loc[common_e, 'w_C']
             w_I_e = w_parent.loc[common_e, 'w_I']
@@ -318,19 +318,19 @@ def compute_wage_employment_timeseries(years, kappa=0.6, use_cache=False,
     return df
 
 
-# ========== ========== ========== ========== ========== ==========
+# ==================== ==================== ==================== ====================
 # 6. Plot: w_I/w_C and L_I/L_C on dual axes
 
 def plot_wage_employment(df, save_path='0_output/wage_employment.png'):
     fig, ax = plt.subplots(1, 1, figsize=(12, 4))
 
-    # --- wage ratio ---
+    # 1. wage ratio
     l1, = ax.plot(
         df.index, df['w_ratio'],
         color='crimson', lw=2, ls='-',
     )
 
-    # --- employment ratio (same axis) ---
+    # 2. employment ratio (same axis)
     l2, = ax.plot(
         df.index, df['L_ratio'],
         color='#1F2A44', lw=2, ls='--',
@@ -359,7 +359,7 @@ def plot_wage_employment(df, save_path='0_output/wage_employment.png'):
     return fig, ax
 
 
-# ========== ========== ========== ========== ========== ==========
+# ==================== ==================== ==================== ====================
 # 7. Cached wrapper
 
 def load_or_compute_we_timeseries(years, kappa=0.6,

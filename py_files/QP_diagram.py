@@ -12,14 +12,14 @@ from py_files.elas import dem_sup_elas
 from py_files.capinc_single import CapIncModel_single
 
 
-# ── colours ──────────────────────────────────────────────────────────────────
+# 1. colours
 C_SUPPLY  = "#1a1a2e"   # dark navy  — supply curve
 C_DEMAND  = "#c0392b"   # crimson    — demand curve
 C_NEW     = "k"   # green      — new equilibrium
 C_OLD     = "k"   # grey       — old equilibrium
 
 
-# ── baseline calibration ──────────────────────────────────────────────────────
+# 2. baseline calibration
 GENERAL = dict(
     alphaK=0.39, alphaL=0.61,
     betaK=0.29,  betaL=0.71,
@@ -32,10 +32,13 @@ GENERAL = dict(
 # )
 
 
+# 3. illustrative tax cut
 DTAU = 0.10   # illustrative 10 pp tax cut
 
 
-# ── model factory ─────────────────────────────────────────────────────────────
+# ==================== ==================== ==================== ====================
+# 1. model factory
+
 def make_model(calib, r=0.07, delta=0.15, theta=0.25, mu=0.26):
     m = CapIncModel_single()
     m.r = r; m.delta = delta; m.theta = theta; m.mu = mu
@@ -44,7 +47,9 @@ def make_model(calib, r=0.07, delta=0.15, theta=0.25, mu=0.26):
     return m
 
 
-# ── elasticities + equilibrium given a model + dtau ──────────────────────────
+# ==================== ==================== ==================== ====================
+# 2. elasticities + equilibrium given a model + dtau
+
 def get_eq(m, dtau, ngm=False):
     elas  = dem_sup_elas(m, tau=0.0)
     eps_D = float(elas["epsD"])
@@ -62,7 +67,9 @@ def get_eq(m, dtau, ngm=False):
     return eps_S, eps_D, log_K_shift, K_new, q_new
 
 
-# ── curve helpers ─────────────────────────────────────────────────────────────
+# ==================== ==================== ==================== ====================
+# 3. curve helpers
+
 def supply_curve(K_grid, eps_S):
     if np.isinf(eps_S):
         return np.ones_like(K_grid)
@@ -72,7 +79,9 @@ def demand_curve(K_grid, eps_D, log_K_shift=0.0):
     return (K_grid * np.exp(-log_K_shift)) ** (-1.0 / eps_D)
 
 
-# ── panel (a): NGM ────────────────────────────────────────────────────────────
+# ==================== ==================== ==================== ====================
+# 4. panel (a): NGM
+
 def draw_ngm(ax):
     m = make_model(GENERAL)
     eps_S, eps_D, log_K_shift, K_new, q_new = get_eq(m, DTAU, ngm=True)
@@ -94,7 +103,9 @@ def draw_ngm(ax):
     ax.title.set_fontsize(15)
 
 
-# ── panel (b): baseline calibration ──────────────────────────────────────────
+# ==================== ==================== ==================== ====================
+# 5. panel (b): baseline calibration
+
 def draw_baseline(ax):
     m = make_model(GENERAL)
     eps_S, eps_D, log_K_shift, K_new, q_new = get_eq(m, DTAU)
@@ -116,7 +127,9 @@ def draw_baseline(ax):
     ax.title.set_fontsize(15)
 
 
-# ── shared helpers ────────────────────────────────────────────────────────────
+# ==================== ==================== ==================== ====================
+# 6. shared helpers
+
 def _mark_eq(ax, K_old, q_old, K_new, q_new):
     for K_eq, q_eq, col in [(K_old, q_old, C_OLD), (K_new, q_new, C_NEW)]:
         ax.scatter([K_eq], [q_eq], color=col, s=48, zorder=5, marker='s')
@@ -135,7 +148,9 @@ def _format_ax(ax, title, ylabel=True):
     ax.xaxis.set_ticklabels([])
     ax.yaxis.set_ticklabels([])
 
-# ── shared bottom legend ──────────────────────────────────────────────────────
+# ==================== ==================== ==================== ====================
+# 7. shared bottom legend
+
 def add_legend(fig):
     handles = [
         Line2D([0], [0], color=C_SUPPLY, lw=2, label="Capital Supply"),
@@ -148,7 +163,9 @@ def add_legend(fig):
                bbox_to_anchor=(0.5, -0.05))
 
 
-# ── main entry point ──────────────────────────────────────────────────────────
+# ==================== ==================== ==================== ====================
+# 8. main entry point
+
 def make_figure(save_path=None):
     fig, axes = plt.subplots(1, 2, figsize=(12, 4), sharey=True)
     fig.subplots_adjust(wspace=0.06, bottom=0.18)

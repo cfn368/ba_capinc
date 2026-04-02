@@ -10,7 +10,7 @@ from py_files.direct_NX import (compute_direct_for_year, load_or_compute_year,
 from dstapi import DstApi
 
 
-# ========== ========== ========== ========== ========== ==========
+# ==================== ==================== ==================== ====================
 # 1. Fetch direct labor shares from NABP36 (industry × year)
 
 def fetch_industry_labor_shares():
@@ -60,7 +60,7 @@ def fetch_industry_labor_shares():
     return df[['year', 'branche_code', 'e_comp', 'GVA']].copy()
 
 
-# ========== ========== ========== ========== ========== ==========
+# ==================== ==================== ==================== ====================
 # 2. Labour share per industry (direct or Leontief-consolidated)
 
 def consolidated_labor_shares(year_result, df_ls_year, use_leontief=False):
@@ -97,7 +97,7 @@ def consolidated_labor_shares(year_result, df_ls_year, use_leontief=False):
     parent_ls  = df_ls_year.set_index('branche_code')
 
     if use_leontief:
-        # ℓ_j = CE_j / X_j — CE is at parent level; all subs within a parent
+        # 1. ℓ_j = CE_j / X_j — CE is at parent level; all subs within a parent
         # share the same ℓ = CE_parent / X_parent_total (proportional allocation
         # cancels out when dividing by sub-industry X).
         x_parent_total = {}
@@ -115,12 +115,12 @@ def consolidated_labor_shares(year_result, df_ls_year, use_leontief=False):
             index=subs
         ).fillna(0.0)
 
-        # Technical coefficients A and Leontief inverse L = (I − A)^{-1}
+        # 2. Technical coefficients A and Leontief inverse L = (I − A)^{-1}
         x_safe = X.replace(0, np.nan)
         A = Z.div(x_safe, axis=1).fillna(0).values
         L = np.linalg.inv(np.eye(len(subs)) - A)
 
-        # LS^cons = ℓ' · L  (row vector: total labour embodied per unit of output)
+        # 3. LS^cons = ℓ' · L  (row vector: total labour embodied per unit of output)
         return pd.Series(ell.values @ L, index=subs)
 
     else:
@@ -135,7 +135,7 @@ def consolidated_labor_shares(year_result, df_ls_year, use_leontief=False):
         )
 
 
-# ========== ========== ========== ========== ========== ==========
+# ==================== ==================== ==================== ====================
 # 3. Sectoral LS with continuous weights  (eq. 2.1 in GG-B)
 
 def sectoral_labor_shares(year_result, ls_cons, kappa=0.6):
@@ -164,11 +164,11 @@ def sectoral_labor_shares(year_result, ls_cons, kappa=0.6):
     out_req = year_result['output_requirements']   # DataFrame, index=sub-industries
     Z       = year_result['Z']
 
-    # --- output required for C+G and I ---
+    # 1. output required for C+G and I
     out_C = out_req['C'] + out_req['G']            # consumption = household + govt
     out_I = out_req['I'].copy()
 
-    # --- organisational services adjustment (60 % rule) ---
+    # 2. organisational services adjustment (60 % rule)
     org_codes = ['69700', '71000', '73000', '74750', '78000', '80820']
     org_in_data = [c for c in org_codes if c in Z.index]
 
@@ -182,11 +182,11 @@ def sectoral_labor_shares(year_result, ls_cons, kappa=0.6):
         if org_total > 0:
             out_I[org_mask] += org_addition * out_I[org_mask] / org_total
 
-    # --- continuous weights (normalised to sum to 1) ---
+    # 3. continuous weights (normalised to sum to 1)
     w_C = out_C / out_C.sum()
     w_I = out_I / out_I.sum()
 
-    # --- aggregate sectoral LS ---
+    # 4. aggregate sectoral LS
     # align indices
     common = ls_cons.index.intersection(w_C.index)
     LS_C = (w_C[common] * ls_cons[common]).sum()
@@ -201,7 +201,7 @@ def sectoral_labor_shares(year_result, ls_cons, kappa=0.6):
     }
 
 
-# ========== ========== ========== ========== ========== ==========
+# ==================== ==================== ==================== ====================
 # 4. Full time-series
 
 def compute_sectoral_ls_timeseries(years, kappa=0.6,
@@ -226,7 +226,7 @@ def compute_sectoral_ls_timeseries(years, kappa=0.6,
         Directory for cache files (shared with direct_NX caches).
     """
 
-    # --- fetch all labor share data once (optionally cached) ---
+    # 1. fetch all labor share data once (optionally cached)
     if use_cache:
         df_ls = load_or_fetch_industry_labor_shares(cache_dir=cache_dir)
     else:
@@ -269,7 +269,7 @@ def compute_sectoral_ls_timeseries(years, kappa=0.6,
     return df
 
 
-# ========== ========== ========== ========== ========== ==========
+# ==================== ==================== ==================== ====================
 # 5. Diagnostic: inspect weights and direct LS for one year
 
 def inspect_year(year, kappa=0.6, use_cache=False, cache_dir=CACHE_DIR):
@@ -314,9 +314,9 @@ def inspect_year(year, kappa=0.6, use_cache=False, cache_dir=CACHE_DIR):
     return parent_agg
 
 
-# ========== ========== ========== ========== ========== ==========
+# ==================== ==================== ==================== ====================
 # 6. Plot: LS difference (I − C) over time
-# ========== ========== ========== ========== ========== ==========
+
 def plot_ls_difference(df_ts, save_path='0_output/LS_consolidated.png'):
     """
     Plot LS_I − LS_C over time from the timeseries DataFrame.
@@ -356,7 +356,7 @@ def plot_ls_difference(df_ts, save_path='0_output/LS_consolidated.png'):
     return fig, ax
 
 
-# ========== ========== ========== ========== ========== ==========
+# ==================== ==================== ==================== ====================
 # 7. Caching helpers
 
 def load_or_fetch_industry_labor_shares(cache_dir=CACHE_DIR, force=False):

@@ -5,46 +5,47 @@ import numpy as np
 
 class CapIncModel_single:
 
+    # ==================== ==================== ==================== ====================
     # 1. initiate
     def __init__(self):
 
         self.r          = 0.07  # world interest rate
         self.delta      = 0.15  # depreciation rate
         self.theta      = 0.25  # capital share in capital production
-        
-        # DK calib 
+
+        # 1. DK calib
         # param:    a_L     a_K     b_L     b_K     phi
         # base:    0.60    0.40    0.67    0.33    0.75
         # 1970:    0.56    0.44    0.67    0.33    1.00
         # 2020:    0.61    0.39    0.66    0.34    0.50
-        
+
         self.alphaL     = 0.60
         self.alphaK     = 0.40
-        
-        self.betaL      = 0.67  
+
+        self.betaL      = 0.67
         self.betaK      = 0.33
-        
+
         self.mu         = 0.26  # labour adjustment cost param target
         self.phi        = 0.75  # calibration target
-        self.L          = 1.0   
+        self.L          = 1.0
         self.z_last     = np.array([0.0, 0.0, 0.0])
         self._ss        = None
 
-    # ========== ========== ========== ========== ==========
+    # ==================== ==================== ==================== ====================
     # 2. capital accumulation
     def next_K(self, K, I):
-        # 3.2 capital accumulation: K'=(1-δ)K + K^θ I^(1-θ)
+        # 1. capital accumulation: K'=(1-δ)K + K^θ I^(1-θ)
         return (1 - self.delta) * K + (K ** self.theta) * (I ** (1 - self.theta))
 
-    # ========== ========== ========== ========== ==========
+    # ==================== ==================== ==================== ====================
     # 3. static block: solve (sK,sL,pI) given (K,q,τ)
     def static_block_sigmoid(self, K, q, tau, z0=(0.0, 0.0, 0.0)):
 
-        # 3.1 map unconstrained z to shares in (0,1)
+        # 1. map unconstrained z to shares in (0,1)
         def sigmoid(z):
             return 1.0 / (1.0 + np.exp(-z))
 
-        # 3.2 parameters (local names = shorter formulas)
+        # 2. parameters (local names = shorter formulas)
         L = self.L
         aK, aL = self.alphaK, self.alphaL
         bK, bL = self.betaK, self.betaL
@@ -52,54 +53,54 @@ class CapIncModel_single:
         theta = self.theta
 
         def F(z):
-            # 3.3 unknowns: shares + log price (pI>0)
+            # 3. unknowns: shares + log price (pI>0)
             zK, zL, u = z
-            sK = sigmoid(zK); sL = sigmoid(zL) 
+            sK = sigmoid(zK); sL = sigmoid(zL)
             pI = np.exp(u)
 
-            # 3.4 sectoral allocations implied by shares
+            # 4. sectoral allocations implied by shares
             KC, KI = (1 - sK) * K,  sK * K
             LC, LI = (1 - sL) * L, sL * L
 
-            # 3.5 outputs (C-sector numeraire; I-sector value uses pI)
-            C = (KC**aK) * (LC**aL) 
-            I = (KI**bK) * (LI**bL) 
+            # 5. outputs (C-sector numeraire; I-sector value uses pI)
+            C = (KC**aK) * (LC**aL)
+            I = (KI**bK) * (LI**bL)
 
-            # 3.6 marginal products / factor prices by Cobb–Douglas
+            # 6. marginal products / factor prices by Cobb–Douglas
             wC = aL * C / LC
             wI = bL * pI * I / LI
 
-            rC = aK * C / KC        
-            rI = bK * pI * I / KI   
+            rC = aK * C / KC
+            rI = bK * pI * I / KI
 
-            # 3.7 equilibrium conditions
+            # 7. equilibrium conditions
             eq1 = rC - rI
             eq2 = (LC / LI) - ((1 - mu) / mu) * (wC / wI) ** phi
 
-            # 3.8 pin down pI via the I/K target implied by (q,pI,θ)
+            # 8. pin down pI via the I/K target implied by (q,pI,θ)
             target_I_over_K = (1 - theta) ** (1 / theta) * (q / pI) ** (1 / theta)
             eq3 = (I / K) - target_I_over_K
 
             return np.array([eq1, eq2, eq3], float)
 
-        # 3.9 solve static system (warm-start with z0)
+        # 9. solve static system (warm-start with z0)
         sol = root(F, np.array(z0, float), method="hybr")
         res = F(sol.x)
 
-        # 3.10 decode solution and recompute objects cleanly
+        # 10. decode solution and recompute objects cleanly
         zK, zL, u = sol.x
         sK, sL = sigmoid(zK), sigmoid(zL)
         pI = float(np.exp(u))
 
         KC, KI   = (1 - sK) * K,  sK * K
         LC, LI = (1 - sL) * L, sL * L
-        C = (KC**aK) * (LC**aL) 
-        I = (KI**bK) * (LI**bL) 
+        C = (KC**aK) * (LC**aL)
+        I = (KI**bK) * (LI**bL)
         wC = aL * C / LC
         wI = bL * pI * I / LI
 
-        # 3.11 gross MPK in C-sector (before tax); tax enters only in Euler later
-        rC_gross = aK * C / KC 
+        # 11. gross MPK in C-sector (before tax); tax enters only in Euler later
+        rC_gross = aK * C / KC
         # rC_gross = aK * C / KC * (1-tau)
 
         return {
@@ -112,11 +113,12 @@ class CapIncModel_single:
             "mins": {"KC": KC, "KI": KI, "LC": LC, "LI": LI},
             "wC": wC, "wI": wI,
             "LC": LC, "LI": LI
-        } 
+        }
 
-    # 4.12 thin wrapper: (i) warm-start with last z, (ii) fail fast if solver fails
+    # ==================== ==================== ==================== ====================
+    # 4. thin wrapper: (i) warm-start with last z, (ii) fail fast if solver fails
     def _static(self, K, q, tau):
-        
+
         out = self.static_block_sigmoid(K, q, tau, z0=self.z_last)
 
         if not out["success"]:
@@ -125,7 +127,7 @@ class CapIncModel_single:
         return out
 
 
-    # ========== ========== ========== ========== ==========
+    # ==================== ==================== ==================== ====================
     # 5. steady state: solve for (K,q) such that (i) K'=K and (ii) SS Euler holds
     def solve_steady_state(self, K_guess=1.0, q_guess=1.0, tau=0.0):
         r, delta, theta = self.r, self.delta, self.theta
@@ -138,7 +140,7 @@ class CapIncModel_single:
             # reset warm-start so SS solve does not depend on previous path calls
             z0_old = self.z_last.copy()
             self.z_last[:] = 0.0
-            st = self._static(K, q, tau=tau) 
+            st = self._static(K, q, tau=tau)
             self.z_last = z0_old
 
             I = st["I"]
@@ -163,16 +165,16 @@ class CapIncModel_single:
         ss = {
             "K": K_ss, "q": q_ss, "pI": st["pI"], "I": st["I"], "C": st["C"],
             "sK": st["sK"], "sL": st["sL"], "rC_gross": st["rC_gross"],
-            "tau": tau,                     
+            "tau": tau,
         }
         self._ss = ss
         return ss
 
 
-    # ========== ========== ========== ========== ========== 
+    # ==================== ==================== ==================== ====================
     # 6. given a candidate q-path, simulate (K,I,C,pI,rC,shares) forward
     def _path_given_q(self, q_path, K0, tau_path):
-        # 6.1 allocate arrays for the implied path
+        # 1. allocate arrays for the implied path
         T  = len(q_path) - 1
         K  = np.empty(T + 1)
         pI = np.empty(T + 1)
@@ -181,33 +183,33 @@ class CapIncModel_single:
         rC = np.empty(T + 1)
         sK = np.empty(T + 1)
         sL = np.empty(T + 1)
-        wC = np.empty(T + 1) 
-        wI = np.empty(T + 1) 
+        wC = np.empty(T + 1)
+        wI = np.empty(T + 1)
         LC = np.empty(T + 1)
         LI = np.empty(T + 1)
 
-        # 6.2 initial condition
+        # 2. initial condition
         K[0] = K0
 
-        # 6.3 restart warm-start at t=0, then carry it forward across t (stability + speed)
+        # 3. restart warm-start at t=0, then carry it forward across t (stability + speed)
         self.z_last[:] = 0.0
 
         for t in range(T + 1):
-            # 6.4 solve static allocations at (K_t,q_t,τ_t)
+            # 4. solve static allocations at (K_t,q_t,τ_t)
             st = self._static(K[t], float(q_path[t]), float(tau_path[t]))
             pI[t] = st["pI"]
             I[t]  = st["I"]
             C[t]  = st["C"]
             rC[t] = st["rC_gross"]
             sK[t] = st["sK"]
-            sL[t] = st["sL"] 
-            
+            sL[t] = st["sL"]
+
             wC[t] = st["wC"]
             wI[t] = st["wI"]
             LC[t] = st["LC"]
             LI[t] = st["LI"]
 
-            # 6.5 update capital using the law of motion
+            # 5. update capital using the law of motion
             if t < T:
                 K[t + 1] = self.next_K(K[t], I[t])
 
@@ -217,10 +219,10 @@ class CapIncModel_single:
                 "LC": LC, "LI": LI}
 
 
-    # ========== ========== ========== ========== ==========
+    # ==================== ==================== ==================== ====================
     # 7. perfect foresight: choose q_path so Euler holds each t plus terminal condition
     def solve_transition(self, tau_path, K0=None, q_guess_path=None, method="krylov", tau_terminal=None):
-        # ensure SS
+        # 1. ensure SS
         if self._ss is None:
             self.solve_steady_state()
         ss = self._ss
@@ -231,13 +233,13 @@ class CapIncModel_single:
         if q_guess_path is None:
             q_guess_path = ss["q"] * np.ones(T + 1)
 
-        # terminal policy (if not provided, just hold last tau fixed)
+        # 2. terminal policy (if not provided, just hold last tau fixed)
         if tau_terminal is None:
             tauTplus = float(tau_path[-1])
         else:
             tauTplus = float(tau_terminal)
 
-        # terminal continuation value q_{T+1}
+        # 3. terminal continuation value q_{T+1}
         ssT = self.solve_steady_state(tau=tauTplus)  # uses your existing SS solver
         q_terminal = ssT["q"]
 
@@ -273,11 +275,10 @@ class CapIncModel_single:
         sim["success"] = bool(getattr(sol, "success", False))
         sim["message"] = str(getattr(sol, "message", "no message"))
         return sim
-    
 
 
-    # ========== ========== ========== ========== ========== 
-    # Calibrate (mu, phi)
+    # ==================== ==================== ==================== ====================
+    # 8. Calibrate (mu, phi)
     #  - enforce zero SS wage premia
     #  - match investment-sector labor supply elasticities:
     #       (1 - sL)*phi = target_elas
@@ -305,7 +306,7 @@ class CapIncModel_single:
             return np.log(p / (1.0 - p))
 
         def _premia_and_elas():
-            # steady state + static eval at SS
+            # 1. steady state + static eval at SS
             ss = self.solve_steady_state(K_guess=K_guess, q_guess=q_guess, tau=tau)
             st = self.static_block_sigmoid(
                 K=ss["K"], q=ss["q"], tau=tau, z0=(0.0, 0.0, 0.0)
@@ -313,14 +314,14 @@ class CapIncModel_single:
 
             prem = float(np.log(st["wI"] / st["wC"]))
 
-            # implied investment-sector labor supply elasticities
-            sL = float(st["sL"]) 
+            # 2. implied investment-sector labor supply elasticities
+            sL = float(st["sL"])
             eps = (1.0 - sL) * float(self.phi)
 
             return ss, st, prem, eps
 
         try:
-            # unknowns: z = [logit(mu), log(phi)]
+            # 3. unknowns: z = [logit(mu), log(phi)]
             z0 = np.array(
                 [
                     _logit(mu_old),
@@ -347,7 +348,7 @@ class CapIncModel_single:
             if not sol.success:
                 raise RuntimeError(sol.message)
 
-            # decode solution cleanly
+            # 4. decode solution cleanly
             self.mu = _sigmoid(sol.x[0])
             self.phi = float(np.exp(sol.x[1]))
 
@@ -375,7 +376,7 @@ class CapIncModel_single:
                 print("-" * 60)
                 print(f"{'new':<10} mu={float(self.mu):.4f}   =>")
                 print(f"{'':<10} log(wI/wC)={prem:+.2e}\n")
-                
+
                 print(f"{'new':<10} phi={float(self.phi):.4f} =>")
                 print(f"{'':<10} eps={eps:.3f}")
 
@@ -394,4 +395,3 @@ class CapIncModel_single:
         except Exception as e:
             self.mu, self.phi = mu_old, phi_old
             raise RuntimeError(f"household calibration failed: {e}")
-

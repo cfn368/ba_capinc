@@ -10,6 +10,9 @@ COLOR_I   = "#00B8D9"
 COLOR_K   = "crimson"
 
 
+# ==================== ==================== ==================== ====================
+# 1. plot IRF panels for standard model variables and welfare gains
+
 def plot_irf(sim1, sim2, sim3, sim_welfare, T_plot, C_ss, savepath="0_output/sim_lr_cs.png"):
     """
     Plot IRF panels for standard model variables and welfare gains.
@@ -66,7 +69,7 @@ def plot_irf(sim1, sim2, sim3, sim_welfare, T_plot, C_ss, savepath="0_output/sim
     )
     axes = np.atleast_1d(axes).ravel()
 
-    # legend handles
+    # 1. legend handles
     h1   = plt.Line2D([0], [0], color=IRF_COLOR, lw=3, ls="-.")
     h2   = plt.Line2D([0], [0], color="k",        lw=1.5)
     h3   = plt.Line2D([0], [0], color="k",        lw=1.5, ls=":", alpha=0.7)
@@ -74,11 +77,11 @@ def plot_irf(sim1, sim2, sim3, sim_welfare, T_plot, C_ss, savepath="0_output/sim
     h4_I = plt.Line2D([0], [0], color=COLOR_I,    lw=3,   ls="-")
     h4_C = plt.Line2D([0], [0], color=COLOR_C,    lw=3,   ls="-")
 
-    # turn off unused axes
+    # 2. turn off unused axes
     for j in range(len(keys) + len(welfare_keys), len(axes)):
         axes[j].axis("off")
 
-    # standard variable panels
+    # 3. standard variable panels
     for i, k in enumerate(keys):
         ax = axes[i]
         raw1 = S1[k][:T_plot]
@@ -107,7 +110,7 @@ def plot_irf(sim1, sim2, sim3, sim_welfare, T_plot, C_ss, savepath="0_output/sim
         ticks[np.argmin(np.abs(ticks))] = 0.0
         ax.set_yticks(ticks)
 
-    # welfare panels
+    # 4. welfare panels
     for j, (wk, title) in enumerate(welfare_keys):
         ax = axes[len(keys) + j]
         path = 100.0 * np.asarray(S1[wk], float)[:T_plot] / C_ss
@@ -123,11 +126,11 @@ def plot_irf(sim1, sim2, sim3, sim_welfare, T_plot, C_ss, savepath="0_output/sim
         ticks[np.argmin(np.abs(ticks))] = 0.0
         ax.set_yticks(ticks)
 
-    fig.legend(
+    legend_ax = axes[len(keys) + len(welfare_keys)]
+    legend_ax.legend(
         [h1, h2, h3, h4_I, h4_C, h4_K],
         ["IRF", "old ss", "new ss", r"Investment w.", r"Consumption w.", "Capitalists"],
-        loc="lower center", ncol=6, frameon=True,
-        bbox_to_anchor=(0.5, 1.0),
+        loc="lower right", ncol=1, frameon=True,
     )
 
     for col in range(ncols):

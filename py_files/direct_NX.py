@@ -10,9 +10,8 @@ from dstapi import DstApi
 CACHE_DIR = "0_intermediate/direct_NX_cache"
 
 
-# ========== ========== ========== ========== ========== ==========
+# ==================== ==================== ==================== ====================
 # 1. Direct final-demand analysis for a specific year (NX-extended, GG-B methodology)
-#    No Leontief inverse — output requirements = direct final demand from IO table.
 
 def compute_direct_for_year(year):
     """
@@ -29,7 +28,6 @@ def compute_direct_for_year(year):
 
     print(f"Processing year {year}...")
 
-    # ========== ========== ========== ========== ========== ==========
     # 0. Setup
 
     subgroup_codes = list(var_groups.sub_to_parent.keys())
@@ -39,7 +37,6 @@ def compute_direct_for_year(year):
     industries = subgroup_codes
     n = len(industries)
 
-    # ========== ========== ========== ========== ========== ==========
     # 1. Fetch Intermediate Use Matrix Z (industry x industry)
     #    Still needed for the organisational-services kappa adjustment.
 
@@ -76,7 +73,6 @@ def compute_direct_for_year(year):
         j = row['use_code']
         Z.loc[i, j] = row['INDHOLD']
 
-    # ========== ========== ========== ========== ========== ==========
     # 2. Fetch Total Output X
 
     params_X = {
@@ -98,7 +94,6 @@ def compute_direct_for_year(year):
 
     X = output_data.set_index('code')['INDHOLD'].reindex(industries).fillna(0)
 
-    # ========== ========== ========== ========== ========== ==========
     # 3. Fetch Final Demand Y (C, G, I, X, M)
 
     final_demand_codes = {
@@ -152,14 +147,12 @@ def compute_direct_for_year(year):
 
     Y = pd.DataFrame(Y_dict, index=industries)
 
-    # ========== ========== ========== ========== ========== ==========
     # 4. Net exports and total final use (GG-B definition)
     #    FU_i = C_i + G_i + I_i + (X_i - M_i)
 
     Y['NX'] = Y['X'] - Y['M']
     Y['total_final_use'] = Y['C'] + Y['G'] + Y['I'] + Y['NX']
 
-    # ========== ========== ========== ========== ========== ==========
     # 5. Direct output requirements
     #    No Leontief multiplier — each cell is just the IO final-demand entry.
     #    output_requirements[i, j] = amount industry i directly sold to demand j.
@@ -184,7 +177,6 @@ def compute_direct_for_year(year):
         output_requirements['I']
     )
 
-    # ========== ========== ========== ========== ========== ==========
     # 6. Use Shares (direct, GG-B definition)
 
     use_shares = pd.DataFrame(index=industries)
@@ -192,7 +184,7 @@ def compute_direct_for_year(year):
     total_direct = output_requirements['total_final_use']
     total_direct_safe = total_direct.replace(0, np.nan)
 
-    # --- Main shares (C+G, I, X out of C+G+I+X) ---
+    # 1. Main shares (C+G, I, X out of C+G+I+X)
     use_shares['C_share'] = (
         (output_requirements['C'] + output_requirements['G']) /
         total_direct_safe * 100
@@ -206,12 +198,12 @@ def compute_direct_for_year(year):
         total_direct_safe * 100
     )
 
-    # --- Direct shares (identical to above in the no-Leontief case, kept for API compat) ---
+    # 2. Direct shares (identical to above in the no-Leontief case, kept for API compat)
     use_shares['C_direct'] = use_shares['C_share']
     use_shares['I_direct'] = use_shares['I_share']
     use_shares['X_direct'] = use_shares['X_share']
 
-    # --- NX-based shares matching GG-B Table A1 ---
+    # 3. NX-based shares matching GG-B Table A1
     fu = Y['total_final_use']
     fu_safe = fu.replace(0, np.nan)
 
@@ -219,7 +211,7 @@ def compute_direct_for_year(year):
     use_shares['I_share_NX'] = (Y['I'] / fu_safe * 100)
     use_shares['NX_share'] = (Y['NX'] / fu_safe * 100)
 
-    # --- Output columns for weighting / downstream use ---
+    # 4. Output columns for weighting / downstream use
     use_shares['output'] = X
     use_shares['output_for_investment'] = output_requirements['I']
     use_shares['output_for_consumption'] = (
@@ -238,46 +230,46 @@ def compute_direct_for_year(year):
     }
 
 
-# ========== ========== ========== ========== ========== ==========
+# ==================== ==================== ==================== ====================
 # 2. Leontief extension: replace direct output requirements with L·f
 
-def add_leontief_output_requirements(year_result):
-    """
-    Takes an existing year_result dict (from compute_direct_for_year) and
-    returns a copy with 'output_requirements' replaced by Leontief-derived
-    total output requirements:  x^S = L · f^S,  where L = (I - A)^{-1}.
+# def add_leontief_output_requirements(year_result):
+#     """
+#     Takes an existing year_result dict (from compute_direct_for_year) and
+#     returns a copy with 'output_requirements' replaced by Leontief-derived
+#     total output requirements:  x^S = L · f^S,  where L = (I - A)^{-1}.
 
-    All other keys (Z, X, Y, use_shares) are unchanged.
-    The Leontief inverse L is added under key 'L'.
-    """
-    Z = year_result['Z']
-    X = year_result['X']
-    Y = year_result['Y']
+#     All other keys (Z, X, Y, use_shares) are unchanged.
+#     The Leontief inverse L is added under key 'L'.
+#     """
+#     Z = year_result['Z']
+#     X = year_result['X']
+#     Y = year_result['Y']
 
-    # Technical coefficients A_ij = Z_ij / X_j
-    X_safe = X.replace(0, np.nan)
-    A = Z.div(X_safe, axis=1).fillna(0)
+#     # Technical coefficients A_ij = Z_ij / X_j
+#     X_safe = X.replace(0, np.nan)
+#     A = Z.div(X_safe, axis=1).fillna(0)
 
-    # Leontief inverse L = (I - A)^{-1}
-    n = len(A)
-    L = pd.DataFrame(
-        np.linalg.inv(np.eye(n) - A.values),
-        index=A.index, columns=A.columns,
-    )
+#     # Leontief inverse L = (I - A)^{-1}
+#     n = len(A)
+#     L = pd.DataFrame(
+#         np.linalg.inv(np.eye(n) - A.values),
+#         index=A.index, columns=A.columns,
+#     )
 
-    # Total output requirements per final demand category
-    out_req = pd.DataFrame({
-        'C': L.values @ Y['C'].values,
-        'G': L.values @ Y['G'].values,
-        'I': L.values @ Y['I'].values,
-        'X': L.values @ Y['X'].values,
-    }, index=A.index)
+#     # Total output requirements per final demand category
+#     out_req = pd.DataFrame({
+#         'C': L.values @ Y['C'].values,
+#         'G': L.values @ Y['G'].values,
+#         'I': L.values @ Y['I'].values,
+#         'X': L.values @ Y['X'].values,
+#     }, index=A.index)
 
-    result = {**year_result, 'L': L, 'output_requirements': out_req}
-    return result
+#     result = {**year_result, 'L': L, 'output_requirements': out_req}
+#     return result
 
 
-# ========== ========== ========== ========== ========== ==========
+# ==================== ==================== ==================== ====================
 # 3. Classify by investment type with organisational services adjustment
 
 def classify_investment_by_type(year_result, kappa=0.6):
@@ -305,7 +297,6 @@ def classify_investment_by_type(year_result, kappa=0.6):
     use_shares['tangible_intangible'] = use_shares.index.map(var_groups.industry_classification)
     use_shares['investment_type'] = use_shares.index.map(var_groups.investment_type)
 
-    # ========== ========== ========== ========== ========== ==========
     # 1. Handle organisational services (kappa rule)
 
     org_codes = ['69700', '71000', '73000', '74750', '78000', '80820']
@@ -326,7 +317,6 @@ def classify_investment_by_type(year_result, kappa=0.6):
                 org_output_total
             )
 
-    # ========== ========== ========== ========== ========== ==========
     # 2. Aggregate by investment type
 
     investment_by_type = use_shares.groupby('investment_type')['output_for_investment'].sum()
@@ -347,8 +337,8 @@ def classify_investment_by_type(year_result, kappa=0.6):
     return shares
 
 
-# ========== ========== ========== ========== ========== ==========
-# 3. GDP data
+# ==================== ==================== ==================== ====================
+# 3b. GDP data
 
 def fetch_gdp_data(years):
     """
@@ -381,7 +371,7 @@ def fetch_gdp_data(years):
     return GDP.set_index('year')['GDP']
 
 
-# ========== ========== ========== ========== ========== ==========
+# ==================== ==================== ==================== ====================
 # 4. Timeseries
 
 def compute_investment_timeseries(years, kappa=0.6, normalize_by_gdp=True,
@@ -428,7 +418,7 @@ def compute_investment_timeseries(years, kappa=0.6, normalize_by_gdp=True,
     return df
 
 
-# ========== ========== ========== ========== ========== ==========
+# ==================== ==================== ==================== ====================
 # 5. Plot as fraction of GDP
 
 def plot_investment_composition(investment_timeseries, as_pct_gdp=True):
@@ -504,7 +494,7 @@ def plot_investment_composition(investment_timeseries, as_pct_gdp=True):
     plt.show()
 
 
-# ========== ========== ========== ========== ========== ==========
+# ==================== ==================== ==================== ====================
 # 6. Aggregate use shares to parent level
 
 def aggregate_use_shares_to_parent(year_result):
@@ -532,7 +522,7 @@ def aggregate_use_shares_to_parent(year_result):
     return parent_shares
 
 
-# ========== ========== ========== ========== ========== ==========
+# ==================== ==================== ==================== ====================
 # 7. Caching helpers
 
 def _year_pickle_path(year, cache_dir):
