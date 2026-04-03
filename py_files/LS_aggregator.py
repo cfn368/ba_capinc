@@ -97,9 +97,9 @@ def consolidated_labor_shares(year_result, df_ls_year, use_leontief=False):
     parent_ls  = df_ls_year.set_index('branche_code')
 
     if use_leontief:
-        # 1. ℓ_j = CE_j / X_j — CE is at parent level; all subs within a parent
-        # share the same ℓ = CE_parent / X_parent_total (proportional allocation
-        # cancels out when dividing by sub-industry X).
+        # 1. ℓ_j = CE_j / X_j and v_j = GVA_j / X_j
+        #    CE and GVA are at parent level; subs within a parent share the same
+        #    ratio (proportional allocation cancels when dividing by X_parent_total).
         x_parent_total = {}
         for s in subs:
             p = parent_map.get(s, s)
@@ -107,9 +107,18 @@ def consolidated_labor_shares(year_result, df_ls_year, use_leontief=False):
                 parent_subs = [ss for ss in subs if parent_map.get(ss, ss) == p]
                 x_parent_total[p] = X[parent_subs].sum()
 
-        ce_series = parent_ls['e_comp']
+        ce_series  = parent_ls['e_comp']
+        gva_series = parent_ls['GVA']
+
         ell = pd.Series(
             [ce_series.get(parent_map.get(s, s), 0.0) /
+             x_parent_total.get(parent_map.get(s, s), np.nan)
+             for s in subs],
+            index=subs
+        ).fillna(0.0)
+
+        v = pd.Series(
+            [gva_series.get(parent_map.get(s, s), 0.0) /
              x_parent_total.get(parent_map.get(s, s), np.nan)
              for s in subs],
             index=subs
@@ -120,8 +129,16 @@ def consolidated_labor_shares(year_result, df_ls_year, use_leontief=False):
         A = Z.div(x_safe, axis=1).fillna(0).values
         L = np.linalg.inv(np.eye(len(subs)) - A)
 
-        # 3. LS^cons = ℓ' · L  (row vector: total labour embodied per unit of output)
-        return pd.Series(ell.values @ L, index=subs)
+        # 3. LS^cons = (ℓ'·L) / (v'·L)
+        #    Normalising by domestic value-added content converts the gross-output
+        #    labour coefficient back to a value-added labour share.  In a closed
+        #    economy v'·L = 1 (Leontief identity) and this collapses to ℓ'·L.
+        #    For open Denmark the denominator < 1, so without it the result is
+        #    depressed by the economy's import share.
+        labour_content = ell.values @ L
+        va_content     = v.values @ L
+        va_content_safe = np.where(va_content > 0, va_content, np.nan)
+        return pd.Series(labour_content / va_content_safe, index=subs)
 
     else:
         parent_ls['direct_ls'] = np.where(
