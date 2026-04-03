@@ -234,7 +234,7 @@ def plot_sweep(sweep_res, savepath='0_output/main_arg.png'):
         Patch(color=colors[1], alpha=0.9, label=r'Consumption workers ($w_C$)'),
     ]
 
-    fig, axes = plt.subplots(1, 2, figsize=(12, 7))
+    fig, axes = plt.subplots(1, 2, figsize=(12, 6.5))
 
     # 1. Left: marginal tax elasticities sweep
     ax = axes[0]

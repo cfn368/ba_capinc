@@ -63,7 +63,7 @@ def plot_irf(sim1, sim2, sim3, sim_welfare, T_plot, C_ss, savepath="0_output/sim
 
     fig, axes = plt.subplots(
         nrows, ncols,
-        figsize=(12, 2.6 * nrows),
+        figsize=(12, 2.5 * nrows),
         sharex=True,
         constrained_layout=True,
     )

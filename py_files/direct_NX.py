@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 from dstapi import DstApi
 
-CACHE_DIR = "0_intermediate/direct_NX_cache"
+CACHE_DIR = "0_intermediate"
 
 
 # ==================== ==================== ==================== ====================
@@ -72,6 +72,43 @@ def compute_direct_for_year(year):
         i = row['supply_code']
         j = row['use_code']
         Z.loc[i, j] = row['INDHOLD']
+
+    # 1b. Fetch imported intermediates and build total-use Z
+    #     Z_total[i,j] = domestic + imported use of product type i by industry j.
+    #     With total-use Z: col_sum(A_total) = (X - GVA) / X, so v'·L = 1
+    #     by accounting identity — no import-leakage correction needed downstream.
+
+    params_Z_M = {
+        'table': 'NAIO1F',
+        'format': 'BULK',
+        'lang': 'en',
+        'variables': [
+            {'code': 'PRISENHED',   'values': ['V']},
+            {'code': 'Tid',         'values': [str(year)]},
+            {'code': 'TILGANG1',    'values': ['P7AD2121']},
+            {'code': 'TILGANG2',    'values': tilgang2_detailed},
+            {'code': 'ANVENDELSE',  'values': anvendelse_detailed},
+        ]
+    }
+
+    io_data_M = NAIO1F.get_data(params=params_Z_M)
+    io_data_M['INDHOLD'] = pd.to_numeric(io_data_M['INDHOLD'], errors='coerce')
+    io_data_M['supply_code'] = io_data_M['TILGANG2'].str.split(' ').str[0]
+    io_data_M['use_code']    = io_data_M['ANVENDELSE'].str.split(' ').str[0]
+
+    Z_M = pd.DataFrame(0.0, index=industries, columns=industries)
+
+    io_intermediate_M = io_data_M[
+        io_data_M['supply_code'].isin(industries) &
+        io_data_M['use_code'].isin(industries)
+    ]
+
+    for _, row in io_intermediate_M.iterrows():
+        i = row['supply_code']
+        j = row['use_code']
+        Z_M.loc[i, j] = row['INDHOLD']
+
+    Z_total = Z + Z_M
 
     # 2. Fetch Total Output X
 
@@ -223,51 +260,13 @@ def compute_direct_for_year(year):
     return {
         'year': year,
         'Z': Z,
+        'Z_total': Z_total,
         'X': X,
         'Y': Y,
         'output_requirements': output_requirements,
         'use_shares': use_shares,
     }
-
-
-# ==================== ==================== ==================== ====================
-# 2. Leontief extension: replace direct output requirements with L·f
-
-# def add_leontief_output_requirements(year_result):
-#     """
-#     Takes an existing year_result dict (from compute_direct_for_year) and
-#     returns a copy with 'output_requirements' replaced by Leontief-derived
-#     total output requirements:  x^S = L · f^S,  where L = (I - A)^{-1}.
-
-#     All other keys (Z, X, Y, use_shares) are unchanged.
-#     The Leontief inverse L is added under key 'L'.
-#     """
-#     Z = year_result['Z']
-#     X = year_result['X']
-#     Y = year_result['Y']
-
-#     # Technical coefficients A_ij = Z_ij / X_j
-#     X_safe = X.replace(0, np.nan)
-#     A = Z.div(X_safe, axis=1).fillna(0)
-
-#     # Leontief inverse L = (I - A)^{-1}
-#     n = len(A)
-#     L = pd.DataFrame(
-#         np.linalg.inv(np.eye(n) - A.values),
-#         index=A.index, columns=A.columns,
-#     )
-
-#     # Total output requirements per final demand category
-#     out_req = pd.DataFrame({
-#         'C': L.values @ Y['C'].values,
-#         'G': L.values @ Y['G'].values,
-#         'I': L.values @ Y['I'].values,
-#         'X': L.values @ Y['X'].values,
-#     }, index=A.index)
-
-#     result = {**year_result, 'L': L, 'output_requirements': out_req}
-#     return result
-
+    
 
 # ==================== ==================== ==================== ====================
 # 3. Classify by investment type with organisational services adjustment
