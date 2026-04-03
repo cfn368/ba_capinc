@@ -6,3 +6,8 @@
 old
 0_intermediate
 0_overview
+__pycache__/
+*.pyc
+*.pyo
+0_raw_data/GVA.xlsx
+0_raw_data/io_overview.xlsx
