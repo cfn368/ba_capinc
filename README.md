@@ -8,7 +8,9 @@
 
 ## Abstract
 
-This thesis studies the welfare incidence of capital income taxation in a two-sector general equilibrium model calibrated to Denmark, drawing closely on Gomez & Gouin-Bonenfant (2025). The central argument is that the secular rise of intangible investment has tightened cross-sectoral labor reallocation frictions, compressing the economy's effective capital supply elasticity and thereby altering who gains and who loses from a capital tax cut. Empirical evidence from Danish input-output and national accounts data documents rising intangible investment shares and diverging sectoral labor shares; calibrated simulations show that investment workers capture the largest welfare gains (~59%) from a permanent 10-percentage-point cut in the corporate income tax rate.
+In the intangible era, capital formation is crucially dependent on specialised labour --- workers in investment-producing industries such as R\&D, software and engineering --- who are in increasingly short supply. Using a neoclassical two-sector model with a Danish calibration, I examine the implications for inequality when the limited supply of such \textit{investment workers} has resulted in an increasingly inelastic capital supply.
+Specifically, I assess the tax incidence of a capital income tax cut on *(i)* consumption workers, *(ii)* investment workers and *(iii)* capitalists. Opposed to the neoclassical case, where consumption workers obtain the whole tax incidence, in my model the gain is primarily obtained by investment workers and also capitalists. My general calibration finds that consumption workers obtain just 27.4\% of a permanent tax cut incidence, while investment workers get 48.0\% and capitalists 24.6\%.
+This is due to the capital supply curve having a positive slope and, thus, any demand increase resulting in not only a quantity --- but also a price increase. These findings challenge the canonical Chamley-Judd prescription of zero capital income taxation, which relies on consumption workers absorbing the full long-run incidence. In the intangible era, an inelastic capital supply redirects a substantial share of the incidence to capitalists and investment workers, implying vast inequality consequences of any such tax cut.
 
 ---
 
@@ -26,9 +28,8 @@ BA/
 │   ├── IRF.py                  # IRF plotting (τ, q, pI, K, sK, sL, wages, welfare)
 │   ├── sweep.py                # φ and εˢ parameter sweeps; elasticity grids; sweep figures
 │   ├── QP_diagram.py           # Capital market equilibrium diagram for alternative φ values
-│   ├── direct_NX.py            # Direct final-demand IO analysis from NAIO1F (DST API);
-│   │                           #   per-year cache management (no Leontief inverse)
-│   ├── LS_aggregator.py        # Sectoral labor shares: fetch NABP36, weight by IO shares,
+│   ├── direct_NX.py            # IO analysis from NAIO1F (DST API); per-year cache management
+│   ├── LS_aggregator.py        # Sectoral labour shares: fetch NABP36, weight by IO shares,
 │   │                           #   aggregate to C/I sectors; timeseries cache wrapper
 │   ├── wage_employment.py      # Sectoral wage ratio wI/wC and employment ratio LI/LC
 │   │                           #   using continuous IO weights; data from NABP36 & NABB36
@@ -36,7 +37,7 @@ BA/
 │                               #   classification (structures, equipment, IP, org. capital)
 │
 ├── 1_qp_mechanism.ipynb        # Capital market equilibrium diagram; Uzawa mechanism
-├── 2_labour_shares.ipynb       # Sectoral labor share timeseries (1966–2024) with IO weights
+├── 2_labour_shares.ipynb       # Sectoral labour share timeseries (1966–2024) with IO weights
 ├── 2_gross_investment.ipynb    # Intangible vs. tangible investment composition over time
 ├── 2_gini_v_itan.ipynb         # Gini coefficient vs. intangible investment share
 ├── 2_phi_argument.ipynb        # Empirical case for declining φ: wI/wC and LI/LC ratios
@@ -46,8 +47,7 @@ BA/
 ├── 0_intermediate/             # Cached intermediate outputs
 │   └── direct_NX_cache/        # Per-year IO results (pickle) and timeseries (parquet)
 ├── 0_output/                   # Generated figures (PNG)
-├── 0_raw_data/                 # Raw DST data files
-└── 0_litterature/              # Literature (primary and secondary)
+└── 0_raw_data/                 # Raw DST data files
 ```
 
 ---
@@ -134,10 +134,6 @@ The quantitative model (`CapIncModel_single`) is a small open economy with:
 - **Baseline calibration:** φ = 0.75
 
 The thesis proves that the Chamley-Judd zero-capital-tax result requires α = β; whenever factor intensities differ across sectors, the tax has first-order welfare effects even in the long run.
-
-### Methodological note
-
-GG-B construct sectoral labor shares by consolidating industry shares through the full Leontief inverse, distributing intermediate-input labor proportionally. This paper instead applies IO weights directly to observed industry-level labor shares from NABP36. The deviation is data-driven: Statistics Denmark's industry classification (36a2) does not provide the sub-industry granularity needed for full Leontief consolidation without material measurement error.
 
 ---
 
