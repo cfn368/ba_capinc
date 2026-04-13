@@ -3,10 +3,11 @@ import numpy as np
 # ==================== ==================== ==================== ====================
 # 1. elasticities (q,K)
 
-def dem_sup_elas(m, tau):
+def dem_sup_elas(m, tau, warm_start=False, K_guess=1.0, q_guess=1.0):
 
     # 1. get
-    ss = m.solve_steady_state(tau=tau)
+    ss = m.solve_steady_state(tau=tau, warm_start=warm_start,
+                              K_guess=K_guess, q_guess=q_guess)
     vals = m.static_block_sigmoid(K=ss['K'], q=ss['q'], tau=ss['tau'])
 
     # 2. compute via matrix

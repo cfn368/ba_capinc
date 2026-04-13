@@ -12,24 +12,25 @@ class CapIncModel_single:
         self.r          = 0.07  # world interest rate
         self.delta      = 0.15  # depreciation rate
         self.theta      = 0.25  # capital share in capital production
+        
+    #     # 1. DK calib NEW
+    #     # param:    1-a     1-b    phi-target
+    #     # 1970:    0.54    0.63    1.0   
+    #     # 2020:    0.56    0.62    0.5
+    #     # main:    0.56    0.62    0.75
 
-        # 1. DK calib
-        # param:    a_L     a_K     b_L     b_K     phi
-        # base:    0.60    0.40    0.67    0.33    0.75
-        # 1970:    0.56    0.44    0.67    0.33    1.00
-        # 2020:    0.61    0.39    0.66    0.34    0.50
+        self.alphaL     = 0.56
+        self.alphaK     = 1 - self.alphaL
 
-        self.alphaL     = 0.60
-        self.alphaK     = 0.40
-
-        self.betaL      = 0.67
-        self.betaK      = 0.33
+        self.betaL      = 0.62
+        self.betaK      = 1 - self.betaL
 
         self.mu         = 0.26  # labour adjustment cost param target
         self.phi        = 0.75  # calibration target
         self.L          = 1.0
         self.z_last     = np.array([0.0, 0.0, 0.0])
         self._ss        = None
+
 
     # ==================== ==================== ==================== ====================
     # 2. capital accumulation
@@ -116,10 +117,15 @@ class CapIncModel_single:
         }
 
     # ==================== ==================== ==================== ====================
-    # 4. thin wrapper: (i) warm-start with last z, (ii) fail fast if solver fails
+    # 4. thin wrapper: warm-start with last z; cold-start fallback; fail fast
     def _static(self, K, q, tau):
 
         out = self.static_block_sigmoid(K, q, tau, z0=self.z_last)
+
+        # fallback: cold start — handles cases where z_last is a bad guess for
+        # the current (K, q) point (e.g. intermediate points probed by outer solver)
+        if not out["success"]:
+            out = self.static_block_sigmoid(K, q, tau, z0=(0.0, 0.0, 0.0))
 
         if not out["success"]:
             raise RuntimeError(f"Static block failed: {out['message']}")
@@ -129,19 +135,19 @@ class CapIncModel_single:
 
     # ==================== ==================== ==================== ====================
     # 5. steady state: solve for (K,q) such that (i) K'=K and (ii) SS Euler holds
-    def solve_steady_state(self, K_guess=1.0, q_guess=1.0, tau=0.0):
+    def solve_steady_state(self, K_guess=1.0, q_guess=1.0, tau=0.0, warm_start=False):
         r, delta, theta = self.r, self.delta, self.theta
         tau = float(tau)
+
+        # reset warm-start once here (not inside G) so G evaluations can chain;
+        # warm_start=True lets the caller (e.g. phi sweep) carry z_last across calls
+        if not warm_start:
+            self.z_last[:] = 0.0
 
         def G(x):
             logK, logq = x
             K, q = np.exp(logK), np.exp(logq)
-
-            # reset warm-start so SS solve does not depend on previous path calls
-            z0_old = self.z_last.copy()
-            self.z_last[:] = 0.0
             st = self._static(K, q, tau=tau)
-            self.z_last = z0_old
 
             I = st["I"]
             K_next = self.next_K(K, I)
@@ -158,8 +164,7 @@ class CapIncModel_single:
 
         K_ss, q_ss = np.exp(sol.x[0]), np.exp(sol.x[1])
 
-        # store SS objects (also resets warm-start for a clean evaluation)
-        self.z_last[:] = 0.0
+        # re-evaluate at SS (z_last is already near SS from G iterations)
         st = self._static(K_ss, q_ss, tau=tau)
 
         ss = {

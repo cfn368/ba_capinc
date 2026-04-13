@@ -60,9 +60,16 @@ def run_phi_sweep_marginal(m, phi_grid, phi_restore=1.35):
     Restores m.phi to phi_restore when done.
     """
     w_C, w_I, r_K = [], [], []
+    m.z_last[:] = 0.0  # initialise warm-start chain before sweep
+    K_guess, q_guess = 1.0, 1.0
     for phi in phi_grid:
         m.phi = phi
-        out = elas.dem_sup_elas(m, tau=0.0)
+        # Pass previous SS (K,q) as starting point for the outer solver and
+        # warm_start=True to carry z_last — both are needed for extreme phi values
+        out = elas.dem_sup_elas(m, tau=0.0, warm_start=True,
+                                K_guess=K_guess, q_guess=q_guess)
+        # update guesses for next iteration
+        K_guess, q_guess = m._ss['K'], m._ss['q']
         res = elas.wr_tax_elas(m, elas_out=out, epsD=out['epsD'])
         w_C.append(res['w_C_elas'])
         w_I.append(res['w_I_elas'])
