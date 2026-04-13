@@ -9,7 +9,7 @@ empirical motivation for declining specialised labour supply elasticity.
 Data sources:
     NABP36  — D.1 compensation of employees by industry
     NABB36  — Hours worked / employees by industry
-    NAIO1F  — Input-output tables (via direct_NX)
+    NAIO1F  — Input-output tables (via investment_shares)
 """
 
 import os
@@ -18,7 +18,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 import py_files.var_groups as var_groups
-from py_files.direct_NX import compute_direct_for_year, load_or_compute_year, CACHE_DIR
+from py_files.investment_shares import compute_direct_for_year, load_or_compute_year, CACHE_DIR
 from py_files.LS_aggregator import (
     sectoral_labor_shares, consolidated_labor_shares,
     load_or_fetch_industry_labor_shares,

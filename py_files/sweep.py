@@ -284,7 +284,7 @@ def plot_sweep(sweep_res, savepath='0_output/main_arg.png'):
 
     # 3. legend
     fig.legend(handles=legend_handles,
-               loc='lower center', bbox_to_anchor=(0.5, 0.00),
+               loc='lower center', bbox_to_anchor=(0.5, -0.02),
                frameon=True, ncol=3)
 
     plt.tight_layout()

@@ -45,7 +45,7 @@ import py_files.shocks as shocks
 # import old.build_output_v2 as build_output
 import py_files.var_groups as var_groups
 import py_files.build_output_single as build_output_single
-import py_files.direct_NX as il
+import py_files.investment_shares as il
 import py_files.LS_aggregator as sls
 import py_files.wage_employment as we
 

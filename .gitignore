@@ -11,3 +11,4 @@ __pycache__/
 *.pyo
 0_raw_data/GVA.xlsx
 0_raw_data/io_overview.xlsx
+.DS_Store

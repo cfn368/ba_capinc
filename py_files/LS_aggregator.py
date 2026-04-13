@@ -5,8 +5,8 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 import py_files.var_groups as var_groups
 
-from py_files.direct_NX import (compute_direct_for_year, load_or_compute_year,
-                                 CACHE_DIR)
+from py_files.investment_shares import (compute_direct_for_year, load_or_compute_year,
+                                        CACHE_DIR)
 from dstapi import DstApi
 
 
@@ -229,7 +229,7 @@ def compute_sectoral_ls_timeseries(years, kappa=0.6,
         If True, reads/writes per-year IO pickles and the NABP36 parquet
         instead of hitting the API every run.
     cache_dir : str
-        Directory for cache files (shared with direct_NX caches).
+        Directory for cache files (shared with investment_shares caches).
     """
 
     # 1. fetch all labor share data once (optionally cached)

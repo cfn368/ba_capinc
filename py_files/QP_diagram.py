@@ -156,7 +156,7 @@ def add_legend(fig):
     ]
     fig.legend(handles=handles, loc="lower center", ncol=5,
                frameon=True, framealpha=0.9,
-               bbox_to_anchor=(0.5, -0.05))
+               bbox_to_anchor=(0.5, -0.08))
 
 
 # ==================== ==================== ==================== ====================
