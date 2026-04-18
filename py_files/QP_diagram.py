@@ -95,7 +95,7 @@ def draw_ngm(ax):
             transform=ax.transAxes, ha="right", va="bottom",
             bbox=dict(boxstyle="round,pad=0.3", fc="white", alpha=0.85, ec="#bbb"))
 
-    _format_ax(ax, "Neoclassical era $\\alpha_K = \\beta_K$", ylabel=True)
+    _format_ax(ax, "Neoclassical era $\\alpha = \\beta$", ylabel=True)
     ax.title.set_fontsize(15)
 
 
@@ -119,7 +119,7 @@ def draw_baseline(ax):
             transform=ax.transAxes, ha="right", va="bottom",
             bbox=dict(boxstyle="round,pad=0.3", fc="white", alpha=0.85, ec="#bbb"))
 
-    _format_ax(ax, "Intangible era $\\alpha_L < \\beta_L$", ylabel=False)
+    _format_ax(ax, "Intangible era $\\alpha > \\beta$", ylabel=False)
     ax.title.set_fontsize(15)
 
 

@@ -5,7 +5,6 @@
 0_references
 old
 # 0_intermediate
-0_overview
 __pycache__/
 *.pyc
 *.pyo

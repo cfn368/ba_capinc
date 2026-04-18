@@ -342,7 +342,7 @@ def plot_ls_difference(df_ts, save_path='0_output/LS_consolidated.png'):
         label=r'$\Delta LS = LS_I - LS_C$'
     )
 
-    ax.axhline(0, color='#1F2A44', linewidth=1.2, ls='--')
+    ax.axhline(0, color='0.2', linewidth=1.2, ls='--')
     ax.set_xlim(df_ts.index.min(), df_ts.index.max())
     ax.set_ylabel('Percentage points')
     ax.grid(linewidth=0.6, alpha=0.35)
