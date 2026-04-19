@@ -8,9 +8,9 @@
 
 ## Abstract
 
-In the intangible era, capital formation is crucially dependent on specialised labour — workers in investment-producing industries such as R&D, software and engineering — who are in increasingly short supply. Using a neoclassical two-sector model with a Danish calibration, I examine the implications for inequality when the limited supply of such *investment workers* has resulted in an increasingly inelastic capital supply.
-Specifically, I assess the tax incidence of a capital income tax cut on *(i)* consumption workers, *(ii)* investment workers and *(iii)* capitalists. In contrast to the neoclassical case, where consumption workers obtain the whole tax incidence, in my model the gain is primarily obtained by investment workers and also capitalists. My general calibration finds that consumption workers obtain just 27.4% of a permanent tax cut incidence, while investment workers get 48.0% and capitalists 24.6%.
-This is due to the capital supply curve having a positive slope and, thus, any demand increase resulting in not only a quantity — but also a price increase. These findings challenge the canonical Chamley-Judd prescription of zero capital income taxation, which relies on consumption workers absorbing the full long-run incidence. In the intangible era, an inelastic capital supply redirects a substantial share of the incidence to capitalists and investment workers, implying vast inequality consequences of any such tax cut.
+In the intangible era, capital formation is crucially dependent on specialised labour — workers in investment-producing industries such as R\&D, software and engineering — who are in increasingly short supply. Using a neoclassical two-sector model with a Danish calibration, I examine the implications for inequality when the limited supply of such investment workers has resulted in an increasingly inelastic capital supply. Specifically, I assess the tax incidence of a capital income tax cut on *(i)* consumption workers, *(ii)* investment workers and *(iii)* capitalists. Unlike the neoclassical case, where consumption workers obtain the whole tax incidence, in my model the gain is primarily obtained by investment workers and also capitalists. My general calibration finds that consumption workers obtain just 26.4% of a permanent tax cut incidence, while investment workers get 48.0% and capitalists 25.6%. 
+The mechanism is direct: the scarce supply of investment workers renders the aggregate capital supply inelastic, so a demand shift can no longer be absorbed by quantities alone and instead raises the price of capital too.
+These findings complicate the canonical Chamley-Judd prescription of zero capital income taxation. The efficiency case survives within the model, but a tax cut is no longer the broad-based gain the neoclassical intuition suggests, instead it becomes a distributional choice that any inequality-averse planner must confront.
 
 ---
 
@@ -129,7 +129,7 @@ The quantitative model (`CapIncModel_single`) is a small open economy with:
 - **Capital income tax** τ on corporate returns
 - **Sectoral labour supply elasticity** φ — governs cross-sectoral reallocation frictions (not a Frisch elasticity)
 - **Fixed world interest rate** (small open economy)
-- **Baseline calibration:** φ = 0.75
+- **Baseline calibration:** φ = 1.04
 
 ---
 

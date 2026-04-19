@@ -13,11 +13,11 @@ class CapIncModel_single:
         self.delta      = 0.15  # depreciation rate
         self.theta      = 0.25  # capital share in capital production
         
-    #     # 1. DK calib NEW
-    #     # param:    1-a     1-b    phi-target
-    #     # 1970:    0.54    0.63    1.0   
-    #     # 2020:    0.56    0.62    0.5
-    #     # main:    0.56    0.62    0.75
+        # 1. DK calib
+        # param:    1-a     1-b    phi-target
+        # 1970:    0.54    0.63    1.0   
+        # 2020:    0.56    0.62    0.5
+        # main:    0.56    0.62    0.75
 
         self.alphaL     = 0.56
         self.alphaK     = 1 - self.alphaL
