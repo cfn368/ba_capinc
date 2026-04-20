@@ -135,7 +135,7 @@ The quantitative model (`CapIncModel_single`) is a small open economy with:
 
 ## Reference
 
-Gomez, M. & Gouin-Bonenfant, E. (2025). *Human Capitalists.* Working paper.
+Gomez, M. & Gouin-Bonenfant, E. (2025). Inelastic Capital in Intangible Economies. Working paper.
 
 ---
 
