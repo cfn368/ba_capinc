@@ -483,9 +483,9 @@ def plot_investment_composition(investment_timeseries, as_pct_gdp=True):
     ylabel = "Percent of GDP" if as_pct_gdp else "Percent of total investment"
     ax1.set_ylabel(ylabel)
 
-    ax2.legend(handles=polys1[::-1], labels=labels[::-1],
+    ax1.legend(handles=polys1[::-1], labels=labels[::-1],
                frameon=True, loc="upper left")
-    ax1.legend(handles=polys2[::-1], labels=labels_right[::-1],
+    ax2.legend(handles=polys2[::-1], labels=labels_right[::-1],
                frameon=True, loc="upper left")
 
     plt.tight_layout()
